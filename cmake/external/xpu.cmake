@@ -30,9 +30,9 @@ if(NOT DEFINED XPU_XRE_BASE_VERSION)
   set(XPU_XRE_BASE_VERSION "4.32.0.1")
 endif()
 if(NOT DEFINED XPU_XHPC_BASE_DATE)
-  set(XPU_XHPC_BASE_DATE "20240828")
+  set(XPU_XHPC_BASE_DATE "eb35/20240828")
 endif()
-set(XPU_XCCL_BASE_VERSION "1.2.11")
+set(XPU_XCCL_BASE_VERSION "1.2.11b")
 if(NOT DEFINED XPU_XFT_BASE_VERSION)
   set(XPU_XFT_BASE_VERSION "20230602")
 endif()
@@ -129,7 +129,7 @@ if(WITH_XPTI)
 endif()
 
 set(XPU_XHPC_URL
-    "https://klx-sdk-release-public.su.bcebos.com/xhpc/eb35/${XPU_XHPC_BASE_DATE}/${XPU_XHPC_DIR_NAME}.tar.gz"
+    "https://klx-sdk-release-public.su.bcebos.com/xhpc/${XPU_XHPC_BASE_DATE}/${XPU_XHPC_DIR_NAME}.tar.gz"
     CACHE STRING "" FORCE)
 
 if(DEFINED XPU_BASE_URL)
