@@ -31,7 +31,6 @@
 #include "paddle/phi/core/platform/collective_helper.h"
 #include "paddle/phi/core/platform/device_context.h"
 #include "xpu/bkcl.h"
-#include "xpu/runtime.h"
 
 #define BKCL_ID_VARNAME "BKCLID"
 
@@ -75,7 +74,7 @@ struct BKCLContext {
   explicit BKCLContext(int dev_id)
       : ctx_(new phi::XPUContext(phi::XPUPlace(dev_id))), comm_{nullptr} {}
 
-  XPUStream stream() const { return ctx_->stream(); }
+  cudaStream_t stream() const { return ctx_->stream(); }
   BKCLContext_t comm() const { return comm_; }
 
   int device_id() const { return ctx_->GetPlace().device; }

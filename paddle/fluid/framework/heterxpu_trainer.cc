@@ -528,7 +528,7 @@ int HeterXpuTrainer::RunTask(const HeterRequest* request,
   }
 #endif
 #ifdef PADDLE_WITH_XPU
-  xpu_wait();
+  cudaDeviceSynchronize();
 #endif
 
   for (int i = 0; i < trainer_desc_.xpu_send_list_size(); ++i) {

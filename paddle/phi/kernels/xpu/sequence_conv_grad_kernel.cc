@@ -215,7 +215,7 @@ void SequenceConvGradXPUKernel(const Context& dev_ctx,
                                          xpu::Activation_t::LINEAR);
     PADDLE_ENFORCE_XDNN_SUCCESS(r, "fc_fusion");
     if (xpu_context->xpu_stream != nullptr) {
-      xpu_wait(xpu_context->xpu_stream);
+      cudaStreamSynchronize(XPU_STREAM_XPU_TO_CUDA(xpu_context->xpu_stream));
     }
   }
 }

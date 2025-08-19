@@ -41,7 +41,7 @@ void BKCLDynamicCheck::CheckDataType(const phi::DenseTensor& tensor,
   int64_t* dtype_device;
   PADDLE_ENFORCE_XPU_SUCCESS(
       xpu_malloc(reinterpret_cast<void**>(&dtype_device), kSize));
-  PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait());
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaDeviceSynchronize());
   PADDLE_ENFORCE_XPU_SUCCESS(xpu_memcpy(
       dtype_device, &dtype_host, kSize, XPUMemcpyKind::XPU_HOST_TO_DEVICE));
 
@@ -51,14 +51,14 @@ void BKCLDynamicCheck::CheckDataType(const phi::DenseTensor& tensor,
   if (root_rank == cur_rank) {
     VLOG(3) << "Dynamic check broadcast metadata, dtype: " << dtype_host;
   } else {
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait());
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaDeviceSynchronize());
     PADDLE_ENFORCE_XPU_SUCCESS(xpu_memcpy(
         &dtype_host, dtype_device, kSize, XPUMemcpyKind::XPU_DEVICE_TO_HOST));
     VLOG(3) << "Dynamic check recv metadata, dtype: " << dtype_host;
     CheckDataType(tensor, dtype_host);
   }
-  PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait());
-  PADDLE_ENFORCE_XPU_SUCCESS(xpu_free(dtype_device));
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaDeviceSynchronize());
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaFree(dtype_device));
 }
 
 void BKCLDynamicCheck::CheckShape(const phi::DenseTensor& tensor,
@@ -87,7 +87,7 @@ void BKCLDynamicCheck::CheckShape(const phi::DenseTensor& out_tensor,
     int64_t* in_shape_device;
     PADDLE_ENFORCE_XPU_SUCCESS(
         xpu_malloc(reinterpret_cast<void**>(&in_shape_device), kSize));
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait());
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaDeviceSynchronize());
     PADDLE_ENFORCE_XPU_SUCCESS(xpu_memcpy(in_shape_device,
                                           &in_shape_host,
                                           kSize,
@@ -101,7 +101,7 @@ void BKCLDynamicCheck::CheckShape(const phi::DenseTensor& out_tensor,
                                             rank,
                                             0));
     if (rank == cur_rank) {
-      PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait());
+      PADDLE_ENFORCE_XPU_SUCCESS(cudaDeviceSynchronize());
       PADDLE_ENFORCE_XPU_SUCCESS(xpu_memcpy(&in_shape_host,
                                             in_shape_device,
                                             kSize,
@@ -109,8 +109,8 @@ void BKCLDynamicCheck::CheckShape(const phi::DenseTensor& out_tensor,
       VLOG(3) << "Dynamic check recv metadata, shape: " << in_shape_host;
       CheckShape(out_tensor, in_shape_host);
     }
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait());
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_free(in_shape_device));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaDeviceSynchronize());
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaFree(in_shape_device));
   }
 }
 
@@ -139,7 +139,7 @@ void BKCLDynamicCheck::CheckAlltoAllShape(
         comm, in_shape_device + cur_rank, 1, in_shape_device, BKCL_INT64, 0));
     if (rank == cur_rank) {
       std::vector<int64_t> in_shapes_recv_host(world_size);
-      PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait());
+      PADDLE_ENFORCE_XPU_SUCCESS(cudaDeviceSynchronize());
       PADDLE_ENFORCE_XPU_SUCCESS(xpu_memcpy(in_shapes_recv_host.data(),
                                             in_shape_device,
                                             kSize * world_size,
@@ -150,7 +150,7 @@ void BKCLDynamicCheck::CheckAlltoAllShape(
         CheckShape(out_tensor[out_rank], in_shapes_recv_host[out_rank]);
       }
     }
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_free(in_shape_device));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaFree(in_shape_device));
   }
 }
 

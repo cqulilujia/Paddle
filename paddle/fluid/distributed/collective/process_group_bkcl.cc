@@ -67,7 +67,7 @@ bool ProcessGroupBKCL::BKCLTask::Wait(std::chrono::milliseconds timeout) {
     // and hope for the best. Note that for correctness the communication stream
     // needs to be in sync mode.
     phi::backends::xpu::XPUDeviceGuard guard(place_.GetDeviceId());
-    xpu_wait();
+    cudaDeviceSynchronize();
     calc_ctx->Wait();
   }
   // Warning here when use calc stream but also invoke waiting explicitly.
@@ -116,7 +116,7 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::Recv(
 
   return Point2Point(
       [&](phi::distributed::BKCLCommContext* comm_context,
-          XPUStream stream,
+          cudaStream_t stream,
           int rank_in_group) {
         VLOG(3) << "bkcl_recv "
                 << "recvbuff: " << tensor->data()
@@ -151,7 +151,7 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::Send(
 
   return Point2Point(
       [&](phi::distributed::BKCLCommContext* comm_context,
-          XPUStream stream,
+          cudaStream_t stream,
           int rank_in_group) {
         VLOG(3) << "bkcl_send "
                 << "sendbuff: " << tensor_maybe_partial.data()
@@ -240,7 +240,7 @@ void ProcessGroupBKCL::SyncCalcStream(const Place& place) {
 }
 
 std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::Collective(
-    std::function<void(phi::distributed::BKCLCommContext*, XPUStream)> fn,
+    std::function<void(phi::distributed::BKCLCommContext*, cudaStream_t)> fn,
     const std::vector<phi::DenseTensor>& tensors,
     CommType op_type,
     bool sync_op,
@@ -299,7 +299,7 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::Collective(
 }
 
 std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::Collective(
-    std::function<void(phi::distributed::BKCLCommContext*, XPUStream)> fn,
+    std::function<void(phi::distributed::BKCLCommContext*, cudaStream_t)> fn,
     const phi::DenseTensor& tensor,
     CommType op_type,
     bool sync_op,
@@ -309,7 +309,8 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::Collective(
 }
 
 std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::Point2Point(
-    std::function<void(phi::distributed::BKCLCommContext*, XPUStream, int)> fn,
+    std::function<void(phi::distributed::BKCLCommContext*, cudaStream_t, int)>
+        fn,
     int peer,
     const phi::DenseTensor& tensor,
     CommType comm_type,
@@ -371,7 +372,8 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::AllReduce(
   CheckTensorContiguous(in_tensor);
 
   return Collective(
-      [&](phi::distributed::BKCLCommContext* comm_context, XPUStream stream) {
+      [&](phi::distributed::BKCLCommContext* comm_context,
+          cudaStream_t stream) {
         VLOG(3) << "bkcl_all_reduce"
                 << "sendbuff: " << in_tensor.data()
                 << ", recvbuff: " << out_tensor->data()
@@ -430,7 +432,8 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::AllToAll(
     use_calc_stream = true;
   }
   return Collective(
-      [&](phi::distributed::BKCLCommContext* comm_context, XPUStream stream) {
+      [&](phi::distributed::BKCLCommContext* comm_context,
+          cudaStream_t stream) {
         if (FLAGS_enable_bkcl_dynamic_check) {
           phi::distributed::BKCLDynamicCheck::CheckShape(
               *out_tensor,
@@ -576,7 +579,8 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::AllToAll(
     use_calc_stream = true;
   }
   return Collective(
-      [&](phi::distributed::BKCLCommContext* comm_context, XPUStream stream) {
+      [&](phi::distributed::BKCLCommContext* comm_context,
+          cudaStream_t stream) {
         if (FLAGS_enable_bkcl_dynamic_check) {
           phi::distributed::BKCLDynamicCheck::CheckAlltoAllShape(
               *out_tensors,
@@ -717,7 +721,8 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::Broadcast(
   CheckTensorContiguous(*out_tensor);
 
   return Collective(
-      [&](phi::distributed::BKCLCommContext* comm_context, XPUStream stream) {
+      [&](phi::distributed::BKCLCommContext* comm_context,
+          cudaStream_t stream) {
         int root = opts.source_rank + opts.source_root;
 
         VLOG(3) << "bkcl_broadcast "
@@ -756,7 +761,8 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::AllGather(
                                                      size_,
                                                      phi::AllocationType::XPU);
   return Collective(
-      [&](phi::distributed::BKCLCommContext* comm_context, XPUStream stream) {
+      [&](phi::distributed::BKCLCommContext* comm_context,
+          cudaStream_t stream) {
         VLOG(3) << "bkcl_all_gather "
                 << "sendbuff: " << in_tensor_maybe_partial.data()
                 << ", recvbuff: " << out_tensor->data()
@@ -787,7 +793,8 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::Reduce(
   CheckTensorContiguous(*out_tensor);
 
   return Collective(
-      [&](phi::distributed::BKCLCommContext* comm_context, XPUStream stream) {
+      [&](phi::distributed::BKCLCommContext* comm_context,
+          cudaStream_t stream) {
         VLOG(3) << "bkcl_reduce "
                 << "sendbuff: " << in_tensor.data()
                 << ", recvbuff: " << out_tensor->data()
@@ -822,7 +829,8 @@ std::shared_ptr<ProcessGroup::Task> ProcessGroupBKCL::ReduceScatter(
   CheckTensorContiguous(*out_tensor);
 
   return Collective(
-      [&](phi::distributed::BKCLCommContext* comm_context, XPUStream stream) {
+      [&](phi::distributed::BKCLCommContext* comm_context,
+          cudaStream_t stream) {
         VLOG(3) << "bkcl_reduce_scatter "
                 << "sendbuff: " << in_tensor.data()
                 << ", recvbuff: " << out_tensor->data()

@@ -70,9 +70,9 @@ void FlashAttnGradKernelBase(
   void *downstart_row_indices_data = nullptr, *upend_row_indices_data = nullptr,
        *downend_row_indices_data = nullptr, *upstart_row_indices_data = nullptr;
   bool is_flashmask = startend_row_indices.get_ptr() != nullptr;
-  XPUStream flashmask_stream;
+  cudaStream_t flashmask_stream;
   if (is_flashmask) {
-    xpu_stream_create(&flashmask_stream);
+    cudaStreamCreate(&flashmask_stream);
     PADDLE_ENFORCE_EQ(
         startend_row_indices->dims().size(),
         4,
@@ -182,7 +182,7 @@ void FlashAttnGradKernelBase(
   // const int* upend_row_indices_data = nullptr,
   // const int flash_mask_head_num = 0,
   // int* flashmask_maxmin = nullptr,
-  // XPUStream side_stream = nullptr);
+  // cudaStream_t side_stream = nullptr);
   int r = flash_attention_grad_kernel(
       ctx.x_context(),
       dout_data,                                  // dout
@@ -232,9 +232,9 @@ void FlashAttnGradKernelBase(
       is_flashmask ? flashmask_stream : nullptr);
   PADDLE_ENFORCE_XDNN_SUCCESS(r, "mha_varlen_bwd");
   if (is_flashmask && flashmask_stream != nullptr) {
-    r = xpu_wait(flashmask_stream);
+    r = cudaStreamSynchronize(flashmask_stream);
     PADDLE_ENFORCE_XPU_SUCCESS(r);
-    xpu_stream_destroy(flashmask_stream);
+    cudaStreamDestroy(flashmask_stream);
   }
 }
 #endif

@@ -28,7 +28,7 @@
 #include "paddle/phi/core/visit_type.h"
 
 #if defined(PADDLE_WITH_XPU)
-#include <xpu/runtime.h>
+#include <cuda.h>
 #endif
 
 namespace phi {
@@ -93,7 +93,7 @@ phi::DDim InferShapeForReshardFromReplicate(
 #if defined(PADDLE_WITH_XPU)
 #define DEVICE_WAIT(dev_ctx) \
   do {                       \
-    xpu_wait();              \
+    cudaDeviceSynchronize(); \
     (dev_ctx)->Wait();       \
   } while (0)
 #else

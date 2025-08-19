@@ -115,7 +115,7 @@ std::shared_ptr<std::remove_pointer<phi::gpuEvent_t>::type> GetCudaEvent(
   return MemoryUtils::Instance().GetCudaEvent(device_id);
 }
 #elif (defined(PADDLE_WITH_XPU) && defined(PADDLE_WITH_XPU_BKCL))
-const phi::Allocator* GetAllocator(int device_id, XPUStream stream) {
+const phi::Allocator* GetAllocator(int device_id, cudaStream_t stream) {
   return MemoryUtils::Instance().GetAllocator(device_id, stream);
 }
 
@@ -131,7 +131,7 @@ const phi::Allocator* GetHostZeroAllocator() {
   return MemoryUtils::Instance().GetHostZeroAllocator();
 }
 
-std::shared_ptr<std::remove_pointer<XPUEvent>::type> GetXpuEvent(
+std::shared_ptr<std::remove_pointer<cudaEvent_t>::type> GetXpuEvent(
     int device_id) {
   return MemoryUtils::Instance().GetXpuEvent(device_id);
 }

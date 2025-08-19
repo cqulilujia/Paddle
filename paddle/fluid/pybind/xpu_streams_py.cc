@@ -33,15 +33,14 @@ namespace py = pybind11;
 namespace paddle {
 namespace platform {
 #ifdef PADDLE_WITH_XPU
-XPUStream get_current_stream(int device_id) {
+phi::XPUCUDAStream *get_current_stream(int device_id) {
   if (device_id == -1) {
     device_id = phi::backends::xpu::GetXPUCurrentDeviceId();
   }
-  auto place = phi::XPUPlace(device_id);
   auto *dev_ctx = static_cast<phi::XPUContext *>(
-      phi::DeviceContextPool::Instance().Get(place));
+      phi::DeviceContextPool::Instance().Get(phi::XPUPlace(device_id)));
   dev_ctx->Wait();
-  return dev_ctx->stream();
+  return dev_ctx->cuda_stream();
 }
 
 #endif
@@ -101,7 +100,7 @@ void BindXpuStream(py::module *m_ptr) {
   });
 
 #ifdef PADDLE_WITH_XPU
-  py::class_<XPUStream>(m, "XPUStream", R"DOC(
+  py::class_<phi::XPUCUDAStream>(m, "XPUCUDAStream", R"DOC(
       The handle of the CUDA stream.
 
       Parameters:
@@ -123,7 +122,7 @@ void BindXpuStream(py::module *m_ptr) {
       )DOC")
       .def(
           "synchronize",
-          [](XPUStream &self) { xpu_wait(self); },
+          [](phi::XPUCUDAStream &self) { self.Synchronize(); },
           R"DOC(
           Waits for stream tasks to complete.
 

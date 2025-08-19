@@ -2918,7 +2918,7 @@ bool AnalysisPredictor::ExpRunWithRuntimeConfig(void *config) {
   auto *stream = xpu_runtime_config->stream;
   if (stream != nullptr && stream != predictor_stream_) {
     paddle::platform::XPUStreamSync(
-        static_cast<paddle::xpuStream>(predictor_stream_));
+        static_cast<cudaStream_t>(predictor_stream_));
     predictor_stream_ = stream;
   }
 

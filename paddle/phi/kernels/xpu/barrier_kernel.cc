@@ -24,8 +24,8 @@
 namespace phi {
 
 #if defined(PADDLE_WITH_XPU_BKCL)
-static void XPUStreamSync(XPUStream stream) {
-  PADDLE_ENFORCE_XDNN_SUCCESS(xpu_wait(stream), "xpu_wait");
+static void XPUStreamSync(cudaStream_t stream) {
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamSynchronize(stream));
 }
 #endif
 
@@ -42,7 +42,7 @@ void BarrierKernel(const Context &dev_ctx,
                     common::errors::Unavailable(
                         "BKCLCommContext is nullptr, collective op should "
                         "has ring_id attr."));
-  XPUStream stream = dev_ctx.stream();
+  cudaStream_t stream = dev_ctx.stream();
   BKCLOp bkcl_reduce_type = BKCL_ADD;
   comm_ctx->AllReduce(out, *in, bkcl_reduce_type, stream);
   XPUStreamSync(stream);

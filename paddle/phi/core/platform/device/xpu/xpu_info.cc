@@ -88,8 +88,8 @@ void MemcpySyncD2D(void* dst,
       dst, dst_place, src, src_place, count, *dev_ctx);
 }
 
-void XPUStreamSync(xpuStream stream) {
-  PADDLE_ENFORCE_XDNN_SUCCESS(xpu_wait(stream), "xpu_wait");
+void XPUStreamSync(cudaStream_t stream) {
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamSynchronize(stream));
 }
 
 /**************************** Others **************************/
@@ -202,7 +202,7 @@ class RecordedXPUMallocHelper {
     phi::DeviceContextPool& pool = phi::DeviceContextPool::Instance();
     auto* dev_ctx = pool.GetByPlace(phi::XPUPlace(dev_id_));
     dev_ctx->Wait();
-    xpu_free(ptr);
+    cudaFree(ptr);
     cur_size_.fetch_sub(size);
     DEVICE_MEMORY_STAT_UPDATE(Reserved, dev_id_, -size);
   }

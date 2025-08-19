@@ -23,14 +23,14 @@ XpuStreamResourcePool::XpuStreamResourcePool() {
   for (int dev_idx = 0; dev_idx < dev_cnt; ++dev_idx) {
     auto creator = [dev_idx] {
       phi::backends::xpu::XPUDeviceGuard guard(dev_idx);
-      xpuStream stream;
-      xpu_stream_create(&stream);
+      cudaStream_t stream;
+      cudaStreamCreate(&stream);
       return stream;
     };
 
-    auto deleter = [dev_idx](xpuStream stream) {
+    auto deleter = [dev_idx](cudaStream_t stream) {
       phi::backends::xpu::XPUDeviceGuard guard(dev_idx);
-      xpu_stream_destroy(stream);
+      cudaStreamDestroy(stream);
     };
 
     pool_.emplace_back(ResourcePool<XpuStreamObject>::Create(creator, deleter));
@@ -64,14 +64,14 @@ XpuEventResourcePool::XpuEventResourcePool() {
   for (int dev_idx = 0; dev_idx < dev_cnt; ++dev_idx) {
     auto creator = [dev_idx] {
       phi::backends::xpu::XPUDeviceGuard guard(dev_idx);
-      xpuEventHandle event;
-      xpu_event_create(&event);
+      cudaEvent_t event;
+      cudaEventCreate(&event);
       return event;
     };
 
-    auto deleter = [dev_idx](xpuEventHandle event) {
+    auto deleter = [dev_idx](cudaEvent_t event) {
       phi::backends::xpu::XPUDeviceGuard guard(dev_idx);
-      xpu_event_destroy(event);
+      cudaEventDestroy(event);
     };
 
     pool_.emplace_back(ResourcePool<XpuEventObject>::Create(creator, deleter));

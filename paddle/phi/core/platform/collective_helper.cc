@@ -280,8 +280,8 @@ class BKCLCommImpl : public BKCLComm {
   void set_comm(BKCLContext_t comm) { comm_ = comm; }
   BKCLContext_t comm() const override { return comm_; }
 
-  XPUStream stream() const override {
-    return dev_ctx_->x_context()->xpu_stream;
+  cudaStream_t stream() const override {
+    return XPU_STREAM_XPU_TO_CUDA(dev_ctx_->x_context()->xpu_stream);
   }
 
   void set_dev_ctx(std::unique_ptr<phi::XPUContext>&& dev_ctx) {

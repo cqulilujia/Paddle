@@ -33,7 +33,7 @@ BKCLCommContext::BKCLCommContext(int rank, int size, BKCLUniqueId bkcl_id)
 
 BKCLContext_t BKCLCommContext::GetBKCLComm() { return bkcl_comm_; }
 
-XPUStream BKCLCommContext::GetStream() { return dev_ctx_->stream(); }
+cudaStream_t BKCLCommContext::GetStream() { return dev_ctx_->stream(); }
 
 phi::XPUContext* BKCLCommContext::GetDevContext() { return dev_ctx_.get(); }
 
@@ -42,24 +42,24 @@ void BKCLCommContext::SetDevContext(
   dev_ctx_ = std::move(dev_ctx);
 }
 
-XPUEvent BKCLCommContext::GetComputeEvent() { return compute_event_.get(); }
+cudaEvent_t BKCLCommContext::GetComputeEvent() { return compute_event_.get(); }
 
 void BKCLCommContext::SetComputeEvent(
-    std::shared_ptr<std::remove_pointer<XPUEvent>::type>&& compute_event) {
+    std::shared_ptr<std::remove_pointer<cudaEvent_t>::type>&& compute_event) {
   compute_event_ = std::move(compute_event);
 }
 
-XPUEvent BKCLCommContext::GetCommEvent() { return comm_event_.get(); }
+cudaEvent_t BKCLCommContext::GetCommEvent() { return comm_event_.get(); }
 
 void BKCLCommContext::SetCommEvent(
-    std::shared_ptr<std::remove_pointer<XPUEvent>::type>&& comm_event) {
+    std::shared_ptr<std::remove_pointer<cudaEvent_t>::type>&& comm_event) {
   comm_event_ = std::move(comm_event);
 }
 
 void BKCLCommContext::Broadcast(phi::DenseTensor* out_tensor,
                                 const phi::DenseTensor& in_tensor,
                                 int root,
-                                XPUStream stream) {
+                                cudaStream_t stream) {
   CommStaticCheck::SameShape(*out_tensor,
                              in_tensor,
                              /*dst_rank*/ rank_,
@@ -77,7 +77,7 @@ void BKCLCommContext::Broadcast(phi::DenseTensor* out_tensor,
 
 void BKCLCommContext::AllGather(phi::DenseTensor* out_tensor,
                                 const phi::DenseTensor& in_tensor,
-                                XPUStream stream) {
+                                cudaStream_t stream) {
   phi::distributed::CommStaticCheck::GatherLikeShape(*out_tensor,
                                                      in_tensor,
                                                      /*dst_rank*/ rank_,
@@ -95,7 +95,7 @@ void BKCLCommContext::AllGather(phi::DenseTensor* out_tensor,
 void BKCLCommContext::ReduceScatter(phi::DenseTensor* out_tensor,
                                     const phi::DenseTensor& in_tensor,
                                     BKCLOp reduce_type,
-                                    XPUStream stream) {
+                                    cudaStream_t stream) {
   phi::distributed::CommStaticCheck::ScatterLikeShape(*out_tensor,
                                                       in_tensor,
                                                       /*dst_rank*/ rank_,
@@ -115,7 +115,7 @@ void BKCLCommContext::ReduceScatter(phi::DenseTensor* out_tensor,
 void BKCLCommContext::Send(const phi::DenseTensor& in_tensor,
                            const int64_t& count,
                            const int& peer,
-                           XPUStream stream) {
+                           cudaStream_t stream) {
   phi::distributed::CommStaticCheck::CheckShape(
       in_tensor, rank_, size_, phi::AllocationType::XPU);
 
@@ -132,7 +132,7 @@ void BKCLCommContext::Send(const phi::DenseTensor& in_tensor,
 void BKCLCommContext::Recv(phi::DenseTensor* out_tensor,
                            const int64_t& count,
                            const int& peer,
-                           XPUStream stream) {
+                           cudaStream_t stream) {
   phi::distributed::CommStaticCheck::CheckShape(
       *out_tensor, rank_, size_, phi::AllocationType::XPU);
 
@@ -149,7 +149,7 @@ void BKCLCommContext::Recv(phi::DenseTensor* out_tensor,
 void BKCLCommContext::AllReduce(phi::DenseTensor* out_tensor,
                                 const phi::DenseTensor& in_tensor,
                                 BKCLOp reduce_type,
-                                XPUStream stream) {
+                                cudaStream_t stream) {
   phi::distributed::CommStaticCheck::SameShape(*out_tensor,
                                                in_tensor,
                                                /*dst_rank*/ rank_,
@@ -167,7 +167,7 @@ void BKCLCommContext::AllReduce(phi::DenseTensor* out_tensor,
 
 void BKCLCommContext::AllToAll(phi::DenseTensor* out_tensor,
                                const phi::DenseTensor& in_tensor,
-                               XPUStream stream) {
+                               cudaStream_t stream) {
   phi::distributed::CommStaticCheck::SameShape(*out_tensor,
                                                in_tensor,
                                                /*dst_rank*/ rank_,
@@ -189,7 +189,7 @@ void BKCLCommContext::AllToAllUnequalSplit(
     const phi::DenseTensor& out_offset_tensor,
     const phi::DenseTensor& in_size_tensor,
     const phi::DenseTensor& in_offset_tensor,
-    XPUStream stream) {
+    cudaStream_t stream) {
   auto in_size_ptr = const_cast<size_t*>(
       reinterpret_cast<const size_t*>(in_size_tensor.data()));
   auto in_offset_ptr = const_cast<size_t*>(
@@ -216,7 +216,7 @@ void BKCLCommContext::Reduce(phi::DenseTensor* out_tensor,
                              const phi::DenseTensor& in_tensor,
                              BKCLOp reduce_type,
                              int root,
-                             XPUStream stream) {
+                             cudaStream_t stream) {
   phi::distributed::CommStaticCheck::SameShape(*out_tensor,
                                                in_tensor,
                                                /*dst_rank*/ root,

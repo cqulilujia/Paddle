@@ -19,12 +19,8 @@
 
 #include "paddle/phi/backends/xpu/xpu_info.h"
 #include "paddle/phi/common/place.h"
-#include "xpu/runtime.h"
 
 namespace paddle {
-
-using xpuStream = XPUStream;
-using xpuEventHandle = XPUEvent;
 
 namespace platform {
 
@@ -68,7 +64,7 @@ void MemcpySyncD2D(void *dst,
                    size_t count);
 
 //! Blocks until stream has completed all operations.
-void XPUStreamSync(xpuStream stream);
+void XPUStreamSync(cudaStream_t stream);
 
 using XPUDeviceGuard = phi::backends::xpu::XPUDeviceGuard;
 

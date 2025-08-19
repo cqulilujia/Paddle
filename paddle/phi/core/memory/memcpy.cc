@@ -25,8 +25,6 @@ limitations under the License. */
 #include <cuda_runtime.h>
 #include <chrono>
 #include "paddle/phi/backends/xpu/xpu_header.h"
-#include "xpu/runtime.h"
-#include "xpu/runtime_ex.h"
 #endif
 
 namespace paddle::memory {

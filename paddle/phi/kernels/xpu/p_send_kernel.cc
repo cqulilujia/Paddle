@@ -36,9 +36,9 @@ void PSendKernel(const Context& dev_ctx,
 #if defined(PADDLE_WITH_XPU_BKCL)
   auto comm_ctx =
       GetCommContext<Context, distributed::BKCLCommContext>(dev_ctx, peer);
-  XPUStream stream = dev_ctx.stream();
+  cudaStream_t stream = dev_ctx.stream();
   if (dynamic_shape) {
-    send_shape_info<Context, distributed::BKCLCommContext, XPUStream>(
+    send_shape_info<Context, distributed::BKCLCommContext, cudaStream_t>(
         dev_ctx, x, comm_ctx, peer, stream);
   }
   comm_ctx->Send(x, x.numel(), peer, stream);
@@ -56,7 +56,7 @@ void PSendArrayKernel(const Context& dev_ctx,
 #if defined(PADDLE_WITH_BKCL)
   auto comm_ctx =
       GetCommContext<Context, distributed::BKCLCommContext>(dev_ctx, peer);
-  XPUStream stream = dev_ctx.stream();
+  cudaStream_t stream = dev_ctx.stream();
   for (size_t idx = 0; idx < x_array.size(); idx++) {
     VLOG(3) << "DenseTensorArray: idx(" << idx << ")";
     auto x = x_array.at(idx);

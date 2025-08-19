@@ -38,7 +38,7 @@ void AllReduceKernel(const Context& dev_ctx,
                         "BKCLCommContext is nullptr, collective op should "
                         "has ring_id attr."));
 
-  XPUStream stream = dev_ctx.stream();
+  cudaStream_t stream = dev_ctx.stream();
 
   BKCLOp bkcl_reduce_type = BKCL_ADD;
   switch (static_cast<ReduceType>(reduce_type)) {

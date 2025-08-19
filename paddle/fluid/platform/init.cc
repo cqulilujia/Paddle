@@ -482,7 +482,7 @@ void InitMemoryMethod() {
 #elif (defined(PADDLE_WITH_XPU) && defined(PADDLE_WITH_XPU_BKCL))
     // TODO(ZibinGuo): Use phi methods later.
     memory_method->get_allocator =
-        [](int device_id, XPUStream stream) -> phi::Allocator * {
+        [](int device_id, cudaStream_t stream) -> phi::Allocator * {
       return paddle::memory::allocation::AllocatorFacade::Instance()
           .GetAllocator(phi::XPUPlace(device_id), stream)
           .get();

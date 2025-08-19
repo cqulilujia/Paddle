@@ -30,8 +30,8 @@
 namespace phi {
 
 #if defined(PADDLE_WITH_XPU_BKCL)
-static void XPUStreamSync(XPUStream stream) {
-  PADDLE_ENFORCE_XDNN_SUCCESS(xpu_wait(stream), "xpu_wait");
+static void XPUStreamSync(cudaStream_t stream) {
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamSynchronize(stream));
 }
 #endif
 

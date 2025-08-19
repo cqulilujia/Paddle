@@ -25,7 +25,7 @@ namespace allocation {
 
 StreamSafeXPUAllocation::StreamSafeXPUAllocation(
     DecoratedAllocationPtr underlying_allocation,
-    XPUStream owning_stream,
+    cudaStream_t owning_stream,
     StreamSafeXPUAllocator* allocator)
     : Allocation(underlying_allocation->ptr(),
                  underlying_allocation->base_ptr(),
@@ -35,7 +35,7 @@ StreamSafeXPUAllocation::StreamSafeXPUAllocation(
       owning_stream_(std::move(owning_stream)),
       allocator_(allocator->shared_from_this()) {}
 
-bool StreamSafeXPUAllocation::RecordStream(XPUStream stream) {
+bool StreamSafeXPUAllocation::RecordStream(cudaStream_t stream) {
   VLOG(8) << "Try record stream " << stream << " for address " << ptr();
   if (stream == owning_stream_) {
     return false;
@@ -56,24 +56,24 @@ bool StreamSafeXPUAllocation::CanBeFreed() {
   for (auto it = outstanding_event_map_.begin();
        it != outstanding_event_map_.end();
        ++it) {
-    XPUEvent& event = it->second;
+    cudaEvent_t& event = it->second;
 
-    PADDLE_ENFORCE_XRE_SUCCESS(xpu_event_destroy(event));
+    PADDLE_ENFORCE_XRE_SUCCESS(cudaEventDestroy(event));
     VLOG(8) << "Destroy event " << event;
   }
   return true;
 }
 
-XPUStream StreamSafeXPUAllocation::GetOwningStream() const {
+cudaStream_t StreamSafeXPUAllocation::GetOwningStream() const {
   return owning_stream_;
 }
 
-void StreamSafeXPUAllocation::RecordStreamPrivate(XPUStream stream) {
-  XPUEvent record_event;
+void StreamSafeXPUAllocation::RecordStreamPrivate(cudaStream_t stream) {
+  cudaEvent_t record_event;
   auto it = outstanding_event_map_.find(stream);
   if (it == outstanding_event_map_.end()) {
-    XPUEvent new_event;
-    PADDLE_ENFORCE_XRE_SUCCESS(xpu_event_create(&new_event));
+    cudaEvent_t new_event;
+    PADDLE_ENFORCE_XRE_SUCCESS(cudaEventCreate(&new_event));
     outstanding_event_map_[stream] = new_event;
     record_event = new_event;
     VLOG(9) << "Create a new event " << new_event;
@@ -82,14 +82,14 @@ void StreamSafeXPUAllocation::RecordStreamPrivate(XPUStream stream) {
     VLOG(9) << "Reuse event " << record_event;
   }
 
-  PADDLE_ENFORCE_XRE_SUCCESS(xpu_event_record(record_event, stream));
+  PADDLE_ENFORCE_XRE_SUCCESS(cudaEventRecord(record_event, stream));
   VLOG(8) << "Record event " << record_event << " to stream " << stream;
 }
 
 StreamSafeXPUAllocator::StreamSafeXPUAllocator(
     std::shared_ptr<Allocator> underlying_allocator,
     phi::XPUPlace place,
-    XPUStream default_stream)
+    cudaStream_t default_stream)
     : underlying_allocator_(std::move(underlying_allocator)),
       place_(std::move(place)),
       default_stream_(std::move(default_stream)) {
@@ -106,11 +106,11 @@ StreamSafeXPUAllocator::~StreamSafeXPUAllocator() {
 
 bool StreamSafeXPUAllocator::IsAllocThreadSafe() const { return true; }
 
-XPUStream StreamSafeXPUAllocator::GetDefaultStream() const {
+cudaStream_t StreamSafeXPUAllocator::GetDefaultStream() const {
   return default_stream_;
 }
 
-void StreamSafeXPUAllocator::SetDefaultStream(XPUStream stream) {
+void StreamSafeXPUAllocator::SetDefaultStream(cudaStream_t stream) {
   default_stream_ = stream;
 }
 

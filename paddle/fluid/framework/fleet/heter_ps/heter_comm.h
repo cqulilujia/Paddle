@@ -460,7 +460,7 @@ class HeterComm {
 #if defined(PADDLE_WITH_CUDA)
     PADDLE_ENFORCE_GPU_SUCCESS(cudaStreamSynchronize(stream));
 #elif defined(PADDLE_WITH_XPU_KP)
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait(stream));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamSynchronize(stream));
 #endif
   }
 
@@ -469,7 +469,7 @@ class HeterComm {
 #if defined(PADDLE_WITH_CUDA)
     PADDLE_ENFORCE_GPU_SUCCESS(cudaStreamCreate(stream));
 #elif defined(PADDLE_WITH_XPU_KP)
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_create(stream));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamCreate(stream));
 #endif
   }
 
@@ -478,7 +478,7 @@ class HeterComm {
 #if defined(PADDLE_WITH_CUDA)
     PADDLE_ENFORCE_GPU_SUCCESS(cudaStreamDestroy(stream));
 #elif defined(PADDLE_WITH_XPU_KP)
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_destroy(stream));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamDestroy(stream));
 #endif
   }
 

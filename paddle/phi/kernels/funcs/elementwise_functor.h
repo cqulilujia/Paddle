@@ -21,7 +21,7 @@ limitations under the License. */
 #include "paddle/phi/common/float16.h"
 #include "paddle/phi/core/enforce.h"
 #if defined(__xpu__)
-#include <xpu/runtime.h>
+#include <cuda.h>
 #include <type_traits>
 #include "xpu/kernel/math_xpu2.h"  // pow()
 #endif

@@ -767,7 +767,7 @@ void Reducer::MarkVarReady(const size_t var_index, const bool is_used_var) {
                                 group_tensor.numel(),
                                 0.0f);
           PADDLE_ENFORCE_XDNN_SUCCESS(r, "constant");
-          PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait(dev_ctx->stream()));
+          PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamSynchronize(dev_ctx->stream()));
         }
       }
 #else

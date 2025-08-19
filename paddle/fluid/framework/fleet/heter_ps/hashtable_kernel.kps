@@ -228,8 +228,8 @@ HashTable<KeyType, ValType>::HashTable(size_t capacity) {
 
 template <typename KeyType, typename ValType>
 HashTable<KeyType, ValType>::~HashTable() {
-  xpu_free((void*)container_);
-  xpu_free((void*)device_optimizer_config_);
+  cudaFree((void*)container_);
+  cudaFree((void*)device_optimizer_config_);
 }
 
 template <typename KeyType, typename ValType>
@@ -333,40 +333,41 @@ void HashTable<KeyType, ValType>::update(const KeyType* d_keys,
 template class HashTable<unsigned long, paddle::framework::FeatureValue>;
 
 template void HashTable<unsigned long, paddle::framework::FeatureValue>::get<
-    XPUStream>(const unsigned long* d_keys,
-               paddle::framework::FeatureValue* d_vals,
-               size_t len,
-               XPUStream stream);
+    cudaStream_t>(const unsigned long* d_keys,
+                  paddle::framework::FeatureValue* d_vals,
+                  size_t len,
+                  cudaStream_t stream);
 
 // template void
-// HashTable<unsigned long, paddle::framework::FeatureValue>::get<XPUStream>(
-//    const unsigned long* d_keys, char* d_vals, size_t len, XPUStream stream);
+// HashTable<unsigned long, paddle::framework::FeatureValue>::get<cudaStream_t>(
+//    const unsigned long* d_keys, char* d_vals, size_t len, cudaStream_t
+//    stream);
 
 template void HashTable<unsigned long, paddle::framework::FeatureValue>::insert<
-    XPUStream>(const unsigned long* d_keys,
-               const paddle::framework::FeatureValue* d_vals,
-               size_t len,
-               XPUStream stream);
+    cudaStream_t>(const unsigned long* d_keys,
+                  const paddle::framework::FeatureValue* d_vals,
+                  size_t len,
+                  cudaStream_t stream);
 
 // template void HashTable<unsigned long,
 // paddle::framework::FeatureValue>::insert<
-//    XPUStream>(const unsigned long* d_keys, size_t len, char* pool,
-//               size_t start_index, XPUStream stream);
+//    cudaStream_t>(const unsigned long* d_keys, size_t len, char* pool,
+//               size_t start_index, cudaStream_t stream);
 
 template void HashTable<unsigned long, paddle::framework::FeatureValue>::
-    dump_to_cpu<XPUStream>(int devid, XPUStream stream);
+    dump_to_cpu<cudaStream_t>(int devid, cudaStream_t stream);
 
 template void HashTable<unsigned long, paddle::framework::FeatureValue>::update<
     paddle::framework::FeaturePushValue,
-    XPUStream>(const unsigned long* d_keys,
-               const paddle::framework::FeaturePushValue* d_grads,
-               size_t len,
-               XPUStream stream);
+    cudaStream_t>(const unsigned long* d_keys,
+                  const paddle::framework::FeaturePushValue* d_grads,
+                  size_t len,
+                  cudaStream_t stream);
 
 // template void HashTable<unsigned long,
 // paddle::framework::FeatureValue>::update<
-//    XPUStream>(const unsigned long* d_keys, const char* d_grads,
-//                          size_t len, XPUStream stream);
+//    cudaStream_t>(const unsigned long* d_keys, const char* d_grads,
+//                          size_t len, cudaStream_t stream);
 
 #endif
 }  // namespace framework

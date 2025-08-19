@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License. */
 
 #ifdef PADDLE_WITH_HETERPS
-#include <xpu/runtime.h>  // NOLINT
 #include <algorithm>
 #include <ctime>
 #include <memory>
@@ -207,15 +206,16 @@ void PSGPUWrapper::CopyKeys(const phi::Place& place,
                             const int64_t* gpu_len,
                             int slot_num,
                             int total_len) {
-  XPUStream stream = nullptr;
+  cudaStream_t stream;
   auto dev_ctx = phi::DeviceContextPool::Instance().Get(place);
-  stream = static_cast<phi::XPUContext*>(dev_ctx)->x_context()->xpu_stream;
+  stream = XPU_STREAM_XPU_TO_CUDA(
+      static_cast<phi::XPUContext*>(dev_ctx)->x_context()->xpu_stream);
   unsigned long long* o_keys =
       reinterpret_cast<unsigned long long*>(origin_keys);
   unsigned long long* t_keys = (unsigned long long*)total_keys;
   const long long* c_len = (const long long*)gpu_len;
   CopyKeysKernel<<<2, 64, stream>>>(o_keys, t_keys, c_len, slot_num, total_len);
-  xpu_wait(stream);
+  cudaStreamSynchronize(stream);
 }
 
 }  // namespace framework

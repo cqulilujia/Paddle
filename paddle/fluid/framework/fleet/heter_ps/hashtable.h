@@ -71,8 +71,8 @@ class XPUCacheArray {
   }
 
   virtual ~XPUCacheArray() {
-    xpu_free(keys);
-    xpu_free(vals);
+    cudaFree(keys);
+    cudaFree(vals);
   }
 
   void print() {}
@@ -99,7 +99,7 @@ class XPUCacheArray {
   }
 #endif
 
-  int prefetch(const int dev_id, XPUStream stream = NULL) { return 0; }
+  int prefetch(const int dev_id, cudaStream_t stream = nullptr) { return 0; }
   size_t size() { return size_; }
 
  private:

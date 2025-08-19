@@ -147,7 +147,7 @@ struct CSoftmaxWithCrossEntropyFunctor<phi::XPUContext, T> {
     const phi::DenseTensor* logits = &logits_in;
     const phi::DenseTensor* labels = &label_in;
 
-    XPUStream stream = nullptr;
+    cudaStream_t stream = nullptr;
     phi::distributed::BKCLCommContext* comm_ctx = nullptr;
 
     comm_ctx = static_cast<phi::distributed::BKCLCommContext*>(

@@ -90,9 +90,9 @@ void FlashAttnKernelBase(
   void *downstart_row_indices_data = nullptr, *upend_row_indices_data = nullptr,
        *downend_row_indices_data = nullptr, *upstart_row_indices_data = nullptr;
   bool is_flashmask = startend_row_indices.get_ptr() != nullptr;
-  XPUStream flashmask_stream;
+  cudaStream_t flashmask_stream;
   if (is_flashmask) {
-    xpu_stream_create(&flashmask_stream);
+    cudaStreamCreate(&flashmask_stream);
     PADDLE_ENFORCE_EQ(
         startend_row_indices->dims().size(),
         4,
@@ -217,9 +217,9 @@ void FlashAttnKernelBase(
   );
   PADDLE_ENFORCE_XDNN_SUCCESS(r, "mha_varlen_fwd");
   if (is_flashmask && flashmask_stream != nullptr) {
-    r = xpu_wait(flashmask_stream);
+    r = cudaStreamSynchronize(flashmask_stream);
     PADDLE_ENFORCE_XPU_SUCCESS(r);
-    xpu_stream_destroy(flashmask_stream);
+    cudaStreamDestroy(flashmask_stream);
   }
 }
 #else
@@ -276,7 +276,8 @@ void FlashAttnUnpaddedKernel(
 #ifndef PADDLE_WITH_XPU_XRE5
   // lod info, only support qlod == klod
   std::vector<int> qlod_vec(batch_size + 1, 0);
-  int r = xpu_wait(ctx.x_context()->xpu_stream);
+  int r = cudaStreamSynchronize(
+      XPU_STREAM_XPU_TO_CUDA(ctx.x_context()->xpu_stream));
   PADDLE_ENFORCE_XPU_SUCCESS(r);
   r = xpu_memcpy(qlod_vec.data(),
                  cu_seqlens_q.data<int>(),
@@ -284,7 +285,8 @@ void FlashAttnUnpaddedKernel(
                  XPUMemcpyKind::XPU_DEVICE_TO_HOST);
   PADDLE_ENFORCE_XPU_SUCCESS(r);
   std::vector<int> klod_vec(batch_size + 1, 0);
-  r = xpu_wait(ctx.x_context()->xpu_stream);
+  r = cudaStreamSynchronize(
+      XPU_STREAM_XPU_TO_CUDA(ctx.x_context()->xpu_stream));
   PADDLE_ENFORCE_XPU_SUCCESS(r);
   r = xpu_memcpy(klod_vec.data(),
                  cu_seqlens_k.data<int>(),

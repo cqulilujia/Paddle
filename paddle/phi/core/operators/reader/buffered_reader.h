@@ -87,7 +87,7 @@ class BufferedReader : public framework::DecoratedReader {
 #endif
 
 #ifdef PADDLE_WITH_XPU
-  xpuStream compute_stream_;
+  cudaStream_t compute_stream_;
   std::shared_ptr<platform::XpuStreamObject> stream_ = nullptr;
   std::vector<std::shared_ptr<platform::XpuEventObject>> events_{};
 #endif

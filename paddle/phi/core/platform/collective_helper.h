@@ -170,7 +170,7 @@ class BKCLComm {
   virtual int rank() const = 0;
   virtual int device_id() const = 0;
   virtual BKCLContext_t comm() const = 0;
-  virtual XPUStream stream() const = 0;
+  virtual cudaStream_t stream() const = 0;
   virtual phi::XPUContext* dev_context() const = 0;
   virtual ~BKCLComm() = default;
 };

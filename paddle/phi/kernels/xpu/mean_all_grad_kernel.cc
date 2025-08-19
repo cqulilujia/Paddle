@@ -53,7 +53,8 @@ void MeanAllGradKernel(const Context& dev_ctx,
   XPUType* dx = reinterpret_cast<XPUType*>(IG->data<T>());
   const T* dy = OG->data<T>();
   T dy0_value;
-  xpu_wait(dev_ctx.x_context()->xpu_stream);
+  cudaStreamSynchronize(
+      XPU_STREAM_XPU_TO_CUDA(dev_ctx.x_context()->xpu_stream));
   memory_utils::Copy(phi::CPUPlace(), &dy0_value, OG->place(), dy, sizeof(T));
   float dy0_fp32 = static_cast<float>(dy0_value);
   dy0_fp32 = dy0_fp32 / static_cast<float>(IG->numel());

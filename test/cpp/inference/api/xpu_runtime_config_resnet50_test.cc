@@ -18,7 +18,6 @@ limitations under the License. */
 #include "paddle/common/enforce.h"
 #include "paddle/common/flags.h"
 #include "test/cpp/inference/api/tester_helper.h"
-#include "xpu/runtime.h"
 #include "xpu/xdnn.h"
 
 namespace paddle_infer {
@@ -109,7 +108,7 @@ TEST(runtime_stream, null_stream) {
 
 TEST(runtime_stream, new_stream) {
   void* stream = nullptr;
-  xpu_stream_create(&stream);
+  cudaStreamCreate(&stream);
   CHECK_NOTNULL(stream);
   {
     experimental::XpuRuntimeConfig xpu_runtime_config;
@@ -120,7 +119,7 @@ TEST(runtime_stream, new_stream) {
     xpu_runtime_config.l3_autotune_size = 0;
     RUN_WITH_RUNTIME_CONFIG(0, xpu_runtime_config);
   }
-  xpu_stream_destroy(stream);
+  cudaStreamDestroy(stream);
 }
 
 TEST(runtime_stream, 2_null_stream) {
@@ -142,7 +141,7 @@ TEST(runtime_stream, null_and_new_stream) {
   xpu_runtime_config0.l3_ptr = nullptr;
   xpu_runtime_config0.l3_autotune_size = 0;
   void* stream = nullptr;
-  xpu_stream_create(&stream);
+  cudaStreamCreate(&stream);
   CHECK_NOTNULL(stream);
   {
     experimental::XpuRuntimeConfig xpu_runtime_config1;
@@ -154,12 +153,12 @@ TEST(runtime_stream, null_and_new_stream) {
     RUN_WITH_RUNTIME_CONFIG(0, xpu_runtime_config0);
     RUN_WITH_RUNTIME_CONFIG(1, xpu_runtime_config1);
   }
-  xpu_stream_destroy(stream);
+  cudaStreamDestroy(stream);
 }
 
 TEST(runtime_stream, 2_new_same_stream) {
   void* stream = nullptr;
-  xpu_stream_create(&stream);
+  cudaStreamCreate(&stream);
   CHECK_NOTNULL(stream);
   experimental::XpuRuntimeConfig xpu_runtime_config;
   xpu_runtime_config.context = nullptr;
@@ -171,12 +170,12 @@ TEST(runtime_stream, 2_new_same_stream) {
     RUN_WITH_RUNTIME_CONFIG(0, xpu_runtime_config);
     RUN_WITH_RUNTIME_CONFIG(1, xpu_runtime_config);
   }
-  xpu_stream_destroy(stream);
+  cudaStreamDestroy(stream);
 }
 
 TEST(runtime_stream, 2_new_different_stream) {
   void* stream0 = nullptr;
-  xpu_stream_create(&stream0);
+  cudaStreamCreate(&stream0);
   CHECK_NOTNULL(stream0);
   experimental::XpuRuntimeConfig xpu_runtime_config0;
   xpu_runtime_config0.context = nullptr;
@@ -185,7 +184,7 @@ TEST(runtime_stream, 2_new_different_stream) {
   xpu_runtime_config0.l3_ptr = nullptr;
   xpu_runtime_config0.l3_autotune_size = 0;
   void* stream1 = nullptr;
-  xpu_stream_create(&stream1);
+  cudaStreamCreate(&stream1);
   CHECK_NOTNULL(stream1);
   experimental::XpuRuntimeConfig xpu_runtime_config1;
   xpu_runtime_config1.context = nullptr;
@@ -197,8 +196,8 @@ TEST(runtime_stream, 2_new_different_stream) {
     RUN_WITH_RUNTIME_CONFIG(0, xpu_runtime_config0);
     RUN_WITH_RUNTIME_CONFIG(1, xpu_runtime_config1);
   }
-  xpu_stream_destroy(stream0);
-  xpu_stream_destroy(stream1);
+  cudaStreamDestroy(stream0);
+  cudaStreamDestroy(stream1);
 }
 
 void RunPredictorWithRuntimeConfig(
@@ -217,7 +216,7 @@ void RunPredictorWithRuntimeConfig(
 
 TEST(runtime_stream, 2_thread) {
   void* stream0 = nullptr;
-  xpu_stream_create(&stream0);
+  cudaStreamCreate(&stream0);
   CHECK_NOTNULL(stream0);
   experimental::XpuRuntimeConfig xpu_runtime_config0;
   xpu_runtime_config0.context = nullptr;
@@ -227,7 +226,7 @@ TEST(runtime_stream, 2_thread) {
   xpu_runtime_config0.l3_autotune_size = 0;
 
   void* stream1 = nullptr;
-  xpu_stream_create(&stream1);
+  cudaStreamCreate(&stream1);
   CHECK_NOTNULL(stream1);
   experimental::XpuRuntimeConfig xpu_runtime_config1;
   xpu_runtime_config1.context = nullptr;
@@ -247,8 +246,8 @@ TEST(runtime_stream, 2_thread) {
     t1.join();
   }
 
-  xpu_stream_destroy(stream0);
-  xpu_stream_destroy(stream1);
+  cudaStreamDestroy(stream0);
+  cudaStreamDestroy(stream1);
 }
 
 TEST(runtime_context, new_context) {

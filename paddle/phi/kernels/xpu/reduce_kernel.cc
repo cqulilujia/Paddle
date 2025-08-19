@@ -43,7 +43,7 @@ void ReduceKernel(const Context& dev_ctx,
       nullptr,
       errors::Unavailable("BKCLCommContext is nullptr, collective op should "
                           "has ring_id attr."));
-  XPUStream stream = nullptr;
+  cudaStream_t stream = nullptr;
   stream = comm_ctx->GetStream();
   PADDLE_ENFORCE_NOT_NULL(stream,
                           errors::NotFound("Should initialize NCCL firstly."));

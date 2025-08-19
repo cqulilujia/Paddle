@@ -124,10 +124,10 @@ void SetXPUDeviceId(int id) {
       id,
       GetXPUDeviceCount(),
       common::errors::InvalidArgument("id must less than XPU count"));
+  // set device with xpurt and cudart to ensure the device id is set correctly
+  // when using two libraries at the same time
   PADDLE_ENFORCE_XPU_SUCCESS(xpu_set_device(id));
-#ifdef PADDLE_WITH_XPU
   PADDLE_ENFORCE_XPU_SUCCESS(cudaSetDevice(id));
-#endif
 }
 
 static inline std::vector<std::string> Split(std::string const& original,

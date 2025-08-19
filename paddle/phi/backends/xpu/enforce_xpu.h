@@ -15,8 +15,6 @@ limitations under the License. */
 #pragma once
 
 #ifdef PADDLE_WITH_XPU
-#include <cuda.h>
-#include <cuda_runtime.h>
 #include <xpu/xpuml.h>
 #endif
 
@@ -53,6 +51,10 @@ DEFINE_EXTERNAL_API_TYPE(int, XPU_SUCCESS);
 DEFINE_EXTERNAL_API_TYPE(cudaError_t, cudaSuccess);
 #undef DEFINE_EXTERNAL_API_TYPE
 }  // namespace details
+
+#define XPU_STREAM_XPU_TO_CUDA(stream) static_cast<cudaStream_t>(stream)
+
+#define XPU_STREAM_CUDA_TO_XPU(stream) static_cast<XPUStream>(stream)
 
 // return code type int for xpu api, type cudaError_t for cuda api
 #define PADDLE_ENFORCE_XPU_SUCCESS(COND)                      \
@@ -118,15 +120,19 @@ DEFINE_EXTERNAL_API_TYPE(cudaError_t, cudaSuccess);
     }                                                                   \
   } while (0)
 
-#define PADDLE_ENFORCE_XRE_SUCCESS(COND)                            \
-  do {                                                              \
-    auto __cond__ = (COND);                                         \
-    auto xre_msg = xpu_strerror(__cond__);                          \
-    if (UNLIKELY(__cond__ != XPU_SUCCESS)) {                        \
-      auto __summary__ =                                            \
-          common::errors::External("XPU Runtime Error: ", xre_msg); \
-      __THROW_ERROR_INTERNAL__(__summary__);                        \
-    }                                                               \
+#define PADDLE_ENFORCE_XRE_SUCCESS(COND)                      \
+  do {                                                        \
+    auto __cond__ = (COND);                                   \
+    using __XPU_STATUS_TYPE__ = decltype(__cond__);           \
+    constexpr auto __success_type__ =                         \
+        ::phi::backends::xpu::details::ExternalApiType<       \
+            __XPU_STATUS_TYPE__>::kSuccess;                   \
+    if (UNLIKELY(__cond__ != __success_type__)) {             \
+      std::string error_msg =                                 \
+          ::phi::backends::xpu::get_xpu_error_msg(__cond__);  \
+      auto __summary__ = common::errors::External(error_msg); \
+      __THROW_ERROR_INTERNAL__(__summary__);                  \
+    }                                                         \
   } while (0)
 
 // TODO(lijin23): support fine-grained error msg.

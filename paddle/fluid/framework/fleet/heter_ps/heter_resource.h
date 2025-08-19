@@ -39,7 +39,7 @@ namespace framework {
 using ppStream = cudaStream_t;
 
 #elif defined(PADDLE_WITH_XPU_KP)
-using ppStream = XPUStream;
+using ppStream = cudaStream_t;
 #endif
 
 #if defined(PADDLE_WITH_CUDA)
@@ -74,16 +74,16 @@ class XPUResource {
 
   int dev_id() const { return dev_id_; }
   int index() const { return index_; }
-  XPUStream local_stream(int num) { return local_streams_[num]; }
-  XPUStream remote_stream(int num) { return remote_streams_[num]; }
-  XPUStream comm_stream(int num) { return comm_streams_[num]; }
+  cudaStream_t local_stream(int num) { return local_streams_[num]; }
+  cudaStream_t remote_stream(int num) { return remote_streams_[num]; }
+  cudaStream_t comm_stream(int num) { return comm_streams_[num]; }
 
   int dev_id_;
   int index_;
   std::vector<int> dev_ids_;
-  std::vector<XPUStream> remote_streams_;
-  std::vector<XPUStream> local_streams_;
-  std::vector<XPUStream> comm_streams_;
+  std::vector<cudaStream_t> remote_streams_;
+  std::vector<cudaStream_t> local_streams_;
+  std::vector<cudaStream_t> comm_streams_;
 };
 #endif
 

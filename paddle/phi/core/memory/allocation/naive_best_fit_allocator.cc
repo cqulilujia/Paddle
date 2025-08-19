@@ -150,7 +150,7 @@ void *Alloc<phi::XPUPlace>(const phi::XPUPlace &place, size_t size) {
   int ret = xpu_malloc(reinterpret_cast<void **>(&p), size);
   if (ret != XPU_SUCCESS) {
     VLOG(10) << "xpu memory malloc(" << size << ") failed, try again";
-    xpu_wait();
+    cudaDeviceSynchronize();
     ret = xpu_malloc(reinterpret_cast<void **>(&p), size);
   }
   PADDLE_ENFORCE_EQ(
@@ -178,7 +178,7 @@ void Free<phi::XPUPlace>(const phi::XPUPlace &place, void *p, size_t size) {
   VLOG(10) << "Free pointer=" << p << " on " << phi::Place(place);
 
   phi::backends::xpu::XPUDeviceGuard guard(place.device);
-  xpu_free(p);
+  cudaFree(p);
 #else
   PADDLE_THROW(
       common::errors::PermissionDenied("'XPUPlace' is not supported."));

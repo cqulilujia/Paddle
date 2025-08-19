@@ -78,23 +78,23 @@ XPUResource::XPUResource(std::vector<int> &dev_ids, int index) {
   remote_streams_.resize(dev_ids_.size());
 
   for (size_t i = 0; i < dev_ids_.size(); ++i) {
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_create(&local_streams_[i]));
-    // PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_create(&comm_streams_[i]));
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_create(&remote_streams_[i]));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamCreate(&local_streams_[i]));
+    // PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamCreate(&comm_streams_[i]));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamCreate(&remote_streams_[i]));
   }
 }
 
 XPUResource::~XPUResource() {
   phi::backends::xpu::XPUDeviceGuard guard(dev_id_);
   for (size_t i = 0; i < local_streams_.size(); ++i) {
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_destroy(local_streams_[i]));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamDestroy(local_streams_[i]));
   }
 
   // for (size_t i = 0; i < comm_streams_.size(); ++i) {
-  //  PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_destroy(comm_streams_[i]));
+  //  PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamDestroy(comm_streams_[i]));
   // }
   for (size_t i = 0; i < remote_streams_.size(); ++i) {
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_destroy(remote_streams_[i]));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamDestroy(remote_streams_[i]));
   }
 }
 

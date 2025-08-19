@@ -24,8 +24,6 @@ limitations under the License. */
 #ifdef PADDLE_WITH_XPU_BKCL
 #include "xpu/bkcl.h"
 #endif
-#include "xpu/runtime.h"
-#include "xpu/runtime_ex.h"
 #include "xpu/xdnn.h"
 #ifdef PADDLE_WITH_XPU_PLUGIN
 #include "xpu/plugin.h"

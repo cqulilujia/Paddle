@@ -75,12 +75,14 @@ void SpatialTransformerResblockXPUKernel(
   int nw = static_cast<int>(x.dims()[3]);
   int input2_dim = -1;
 
-  if (has_silu_fc_input) {
-    PADDLE_ENFORCE_XDNN_SUCCESS(-1, "has_silu_fc_input unsupported yet!!!");
-  }
-  if (include_silu) {
-    PADDLE_ENFORCE_XDNN_SUCCESS(-1, "include_silu unsupported yet!!!");
-  }
+  PADDLE_ENFORCE_NE(has_silu_fc_input,
+                    true,
+                    common::errors::Unimplemented(
+                        "has_silu_fc_input is not supported in XPU yet!"));
+  PADDLE_ENFORCE_NE(include_silu,
+                    true,
+                    common::errors::Unimplemented(
+                        "include_silu is not supported in XPU yet!"));
 
   std::vector<xft::xftVec<float>> xft_gn_weight_;
   std::vector<xft::xftVec<float>> xft_gn_bias_;

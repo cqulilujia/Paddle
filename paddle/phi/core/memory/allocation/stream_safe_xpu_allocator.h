@@ -34,20 +34,20 @@ class StreamSafeXPUAllocator;
 class StreamSafeXPUAllocation : public Allocation {
  public:
   StreamSafeXPUAllocation(DecoratedAllocationPtr underlying_allocation,
-                          XPUStream owning_stream,
+                          cudaStream_t owning_stream,
                           StreamSafeXPUAllocator *allocator);
 
-  bool RecordStream(XPUStream stream);
+  bool RecordStream(cudaStream_t stream);
   bool CanBeFreed();
-  XPUStream GetOwningStream() const;
+  cudaStream_t GetOwningStream() const;
 
  private:
   thread_local static std::once_flag once_flag_;
-  void RecordStreamPrivate(XPUStream stream);
+  void RecordStreamPrivate(cudaStream_t stream);
   DecoratedAllocationPtr underlying_allocation_;
 
-  std::map<XPUStream, XPUEvent> outstanding_event_map_;
-  XPUStream owning_stream_;
+  std::map<cudaStream_t, cudaEvent_t> outstanding_event_map_;
+  cudaStream_t owning_stream_;
   SpinLock outstanding_event_map_lock_;
   std::shared_ptr<Allocator> allocator_;
 };
@@ -58,12 +58,12 @@ class StreamSafeXPUAllocator
  public:
   StreamSafeXPUAllocator(std::shared_ptr<Allocator> underlying_allocator,
                          phi::XPUPlace place,
-                         XPUStream default_stream);
+                         cudaStream_t default_stream);
   ~StreamSafeXPUAllocator();
 
   bool IsAllocThreadSafe() const override;
-  XPUStream GetDefaultStream() const;
-  void SetDefaultStream(XPUStream stream);
+  cudaStream_t GetDefaultStream() const;
+  void SetDefaultStream(cudaStream_t stream);
 
  protected:
   phi::Allocation *AllocateImpl(size_t size) override;
@@ -80,7 +80,7 @@ class StreamSafeXPUAllocator
 
   std::shared_ptr<Allocator> underlying_allocator_;
   phi::XPUPlace place_;
-  XPUStream default_stream_;
+  cudaStream_t default_stream_;
   std::list<StreamSafeXPUAllocation *> unfreed_allocations_;
   SpinLock unfreed_allocation_lock_;
 };

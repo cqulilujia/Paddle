@@ -26,8 +26,12 @@
 #include "paddle/utils/test_macros.h"
 
 #ifdef PADDLE_WITH_CUDA
-#include <cuda.h>
 #include <cuda_runtime.h>
+#endif
+
+#ifdef PADDLE_WITH_XPU
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 #endif
 
 #ifdef PADDLE_WITH_HIP
@@ -170,12 +174,12 @@ struct MemoryInterface {
   std::shared_ptr<std::remove_pointer<phi::gpuEvent_t>::type> (
       *get_new_cuda_event)(int device_id);
 #elif (defined(PADDLE_WITH_XPU) && defined(PADDLE_WITH_XPU_BKCL))
-  phi::Allocator* (*get_allocator)(int device_id, XPUStream stream);
+  phi::Allocator* (*get_allocator)(int device_id, cudaStream_t stream);
   phi::Allocator* (*get_host_allocator)();
   phi::Allocator* (*get_zero_allocator)(int device_id);
   phi::Allocator* (*get_host_zero_allocator)();
   phi::Allocator* (*get_pinned_allocator)();
-  std::shared_ptr<std::remove_pointer<XPUEvent>::type> (*get_new_xpu_event)(
+  std::shared_ptr<std::remove_pointer<cudaEvent_t>::type> (*get_new_xpu_event)(
       int device_id);
 #endif
 };
@@ -378,7 +382,7 @@ class MemoryUtils {
     return memory_method_->get_new_cuda_event(device_id);
   }
 #elif (defined(PADDLE_WITH_XPU) && defined(PADDLE_WITH_XPU_BKCL))
-  const phi::Allocator* GetAllocator(int device_id, XPUStream stream) {
+  const phi::Allocator* GetAllocator(int device_id, cudaStream_t stream) {
     return memory_method_->get_allocator(device_id, stream);
   }
 
@@ -394,7 +398,7 @@ class MemoryUtils {
     return memory_method_->get_host_zero_allocator();
   }
 
-  std::shared_ptr<std::remove_pointer<XPUEvent>::type> GetXpuEvent(
+  std::shared_ptr<std::remove_pointer<cudaEvent_t>::type> GetXpuEvent(
       int device_id) {
     return memory_method_->get_new_xpu_event(device_id);
   }
@@ -477,7 +481,7 @@ const Allocator* GetPinnedAllocator();
 std::shared_ptr<std::remove_pointer<phi::gpuEvent_t>::type> GetCudaEvent(
     int device_id);
 #elif (defined(PADDLE_WITH_XPU) && defined(PADDLE_WITH_XPU_BKCL))
-const Allocator* GetAllocator(int device_id, XPUStream stream);
+const Allocator* GetAllocator(int device_id, cudaStream_t stream);
 
 const Allocator* GetHostAllocator();
 
@@ -485,7 +489,8 @@ const Allocator* GetZeroAllocator(int device_id);
 
 const Allocator* GetHostZeroAllocator();
 
-std::shared_ptr<std::remove_pointer<XPUEvent>::type> GetXpuEvent(int device_id);
+std::shared_ptr<std::remove_pointer<cudaEvent_t>::type> GetXpuEvent(
+    int device_id);
 #endif
 
 class Buffer {

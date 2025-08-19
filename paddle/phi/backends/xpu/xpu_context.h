@@ -24,10 +24,7 @@ limitations under the License. */
 #include "paddle/phi/backends/xpu/xpu_info.h"
 #include "paddle/phi/common/place.h"
 #include "paddle/phi/core/device_context.h"
-
-#ifdef PADDLE_WITH_XPU
 #include "paddle/phi/core/xpu_cuda_stream.h"
-#endif
 
 namespace Eigen {
 struct DefaultDevice;
@@ -37,9 +34,7 @@ namespace xpu = baidu::xpu::api;
 
 namespace phi {
 
-#ifdef PADDLE_WITH_XPU
 class XPUCUDAStream;
-#endif
 
 class DenseTensor;
 class XPUContext : public DeviceContext,
@@ -52,15 +47,13 @@ class XPUContext : public DeviceContext,
 
   virtual ~XPUContext();
 
-#ifdef PADDLE_WITH_XPU
   /*! \brief  Return XPUCUDAStream in the device context. */
-  XPUCUDAStream* xpu_cuda_stream() const;
+  XPUCUDAStream* xpu_cuda_stream(int i = 0) const;
 
   // Note that this function is a trick implementation since all 'set' methods
   // are protected by default.
   // clear: whether clear the original CUDAStream or not
   void SetXPUCUDAStream(XPUCUDAStream*, bool clear = true);
-#endif
 
   const Place& GetPlace() const override;
 
@@ -72,8 +65,8 @@ class XPUContext : public DeviceContext,
   xpu::BKCLContext_t bkcl_context() const;
   void SetBkclContext(xpu::BKCLContext_t context);
   void CreateStream(int i = 0);
-  void RecordEvent(XPUEvent event, int s) const;
-  void StreamWaitEvent(XPUEvent event, int s) const;
+  void RecordEvent(cudaEvent_t event, int s) const;
+  void StreamWaitEvent(cudaEvent_t event, int s) const;
   void StreamWaitStream(int wait_stream, int record_stream) const;
   int64_t GetStreamNum() const;
   void AddStashedMemory(int stream, const phi::DenseTensor& tensor);
@@ -109,7 +102,7 @@ class XPUContext : public DeviceContext,
 
   Eigen::DefaultDevice* eigen_device() const { return nullptr; }
 
-  XPUStream stream(int i = 0) const;
+  cudaStream_t stream(int i = 0) const;
 
   static const char* name() { return "XPUContext"; }
 

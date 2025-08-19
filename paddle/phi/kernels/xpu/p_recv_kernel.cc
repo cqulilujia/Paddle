@@ -39,12 +39,12 @@ void PRecvKernel(const Context& dev_ctx,
 
   auto comm_ctx =
       GetCommContext<Context, distributed::BKCLCommContext>(dev_ctx, peer);
-  XPUStream stream = dev_ctx.stream();
+  cudaStream_t stream = dev_ctx.stream();
 
   // auto data_type = phi::TransToPhiDataType(dtype);
   if (dynamic_shape) {
     DDim new_dim =
-        recv_shape_info<Context, distributed::BKCLCommContext, XPUStream>(
+        recv_shape_info<Context, distributed::BKCLCommContext, cudaStream_t>(
             dev_ctx, out, comm_ctx, peer);
     out->Resize(new_dim);
   }
@@ -67,7 +67,7 @@ void PRecvArrayKernel(const Context& dev_ctx,
 
   auto comm_ctx =
       GetCommContext<Context, distributed::BKCLCommContext>(dev_ctx, peer);
-  XPUStream stream = dev_ctx.stream();
+  cudaStream_t stream = dev_ctx.stream();
   for (size_t idx = 0; idx < out_shape.size(); ++idx) {
     VLOG(3) << "DenseTensorArray: idx(" << idx << ")";
     auto out = out_array->at(idx);

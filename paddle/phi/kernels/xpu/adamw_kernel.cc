@@ -850,7 +850,8 @@ void AdamwDenseKernel(
       const float* beta2_pow_p = beta2_pow.template data<float>();
       dev_ctx.template HostAlloc<float>(beta2_pow_out)[0] =
           beta2_ * beta2_pow_p[0];
-      xpu_wait(dev_ctx.x_context()->xpu_stream);
+      cudaStreamSynchronize(
+          XPU_STREAM_XPU_TO_CUDA(dev_ctx.x_context()->xpu_stream));
     } else {  // update in  xpu
       float* beta1_pow_out_p = dev_ctx.template Alloc<float>(beta1_pow_out);
       float* beta2_pow_out_p = dev_ctx.template Alloc<float>(beta2_pow_out);

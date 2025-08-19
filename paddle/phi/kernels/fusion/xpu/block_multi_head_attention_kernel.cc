@@ -36,7 +36,8 @@ int GetMaxLen(const Context& dev_ctx,
                                            {0});
   PADDLE_ENFORCE_EQ(
       r, 0, common::errors::Fatal("baidu::xpu::api::reduce_max failed."));
-  xpu_wait(dev_ctx.x_context()->xpu_stream);
+  cudaStreamSynchronize(
+      XPU_STREAM_XPU_TO_CUDA(dev_ctx.x_context()->xpu_stream));
   r = xpu_memcpy(&max_len_cpu,
                  max_len_tensor->data<int>(),
                  sizeof(int),
@@ -283,7 +284,7 @@ void BlockMultiheadAttentionXPUKernel(
     PADDLE_THROW(common::errors::Unimplemented("Not supports qkv_bias now."));
   }
   std::vector<int> lods_cpu(bsz + 1, 0);
-  xpu_wait(xpu_context->xpu_stream);
+  cudaStreamSynchronize(XPU_STREAM_XPU_TO_CUDA(xpu_context->xpu_stream));
   xpu_memcpy(lods_cpu.data() + 1,
              seq_lens_this_time.data<int>(),
              sizeof(int32_t) * bsz,
@@ -454,7 +455,7 @@ void BlockMultiheadAttentionXPUKernel(
           "Not supports cache_k_quant_scales or cachekv_quant_mode now."));
     }
     std::vector<int> lods_decoder_cpu(bsz + 1, 0);
-    xpu_wait(xpu_context->xpu_stream);
+    cudaStreamSynchronize(XPU_STREAM_XPU_TO_CUDA(xpu_context->xpu_stream));
     xpu_memcpy(lods_decoder_cpu.data() + 1,
                seq_lens_decoder.data<int>(),
                sizeof(int32_t) * bsz,

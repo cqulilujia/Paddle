@@ -15,8 +15,6 @@
 #include "paddle/phi/backends/xpu/xpu_context.h"
 
 #ifdef PADDLE_WITH_XPU
-#include <cuda.h>
-#include <cuda_runtime.h>
 #include "paddle/phi/core/xpu_cuda_stream.h"
 #endif
 
@@ -31,8 +29,6 @@
 #include "paddle/phi/core/allocator.h"
 #include "paddle/phi/core/dense_tensor.h"
 #include "paddle/phi/core/os_info.h"
-#include "xpu/runtime.h"
-#include "xpu/runtime_ex.h"
 #include "xpu/xdnn.h"
 
 #if !defined(PADDLE_WITH_XPU_KP) || defined(__xpu_on_host__)
@@ -45,7 +41,8 @@ namespace phi {
 
 struct XPUContext::Impl {
   void SetL3Cache(int64_t l3_size = 1024) {
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait(context_->xpu_stream));
+    PADDLE_ENFORCE_XPU_SUCCESS(
+        cudaStreamSynchronize(XPU_STREAM_XPU_TO_CUDA(context_->xpu_stream)));
     context_->_l3_mgr.set(nullptr, 0, true);  // free origin l3
     void* l3_ptr = nullptr;
     xpu_malloc(static_cast<void**>(&l3_ptr), l3_size, XPU_MEM_L3);
@@ -65,9 +62,9 @@ struct XPUContext::Impl {
     for (auto& ctx_it : context_map_) {
       auto& ctx = ctx_it.second;
       if (ctx != nullptr) {
-        xpu_wait(ctx->xpu_stream);
+        cudaStreamSynchronize(XPU_STREAM_XPU_TO_CUDA(ctx->xpu_stream));
         if (ctx->xpu_stream) {
-          xpu_stream_destroy(ctx->xpu_stream);
+          cudaStreamDestroy(XPU_STREAM_XPU_TO_CUDA(ctx->xpu_stream));
           ctx->xpu_stream = nullptr;
         }
         ctx = nullptr;
@@ -77,11 +74,11 @@ struct XPUContext::Impl {
 
     if (owned_ && context_ != nullptr) {
       backends::xpu::XPUDeviceGuard guard(place_.GetDeviceId());
-      xpu_wait(context_->xpu_stream);
+      cudaStreamSynchronize(XPU_STREAM_XPU_TO_CUDA(context_->xpu_stream));
       if (context_->xpu_stream && stream_owned_) {
-        // manually destroy XPUStream here until xpu::api integrates this work
-        // into Context dtor
-        xpu_stream_destroy(context_->xpu_stream);
+        // manually destroy cudaStream_t here until xpu::api integrates this
+        // work into Context dtor
+        cudaStreamDestroy(XPU_STREAM_XPU_TO_CUDA(context_->xpu_stream));
         context_->xpu_stream = nullptr;
       }
       xpu::destroy_context(context_);
@@ -91,21 +88,29 @@ struct XPUContext::Impl {
 
   const Place& GetPlace() const { return place_; }
 
-  XPUStream stream() const {
-    xpu::Context* ctx_t = GetXdlCtx();
-    if (ctx_t) {
-      return ctx_t->xpu_stream;
-    }
-    return context_->xpu_stream;
-  }
-
   // Set external stream for context
   void SetStream(void* stream) {
     if (context_->xpu_stream != nullptr && stream_owned_) {
-      xpu_stream_destroy(context_->xpu_stream);
+      cudaStreamDestroy(XPU_STREAM_XPU_TO_CUDA(context_->xpu_stream));
     }
     stream_owned_ = false;
     context_->set_stream(static_cast<XPUStream>(stream));
+  }
+
+  cudaStream_t stream() const {
+    xpu::Context* ctx_t = GetXdlCtx();
+    if (ctx_t) {
+      return XPU_STREAM_XPU_TO_CUDA(ctx_t->xpu_stream);
+    }
+    return XPU_STREAM_XPU_TO_CUDA(context_->xpu_stream);
+  }
+
+  XPUCUDAStream* xpu_cuda_stream() const {
+    PADDLE_ENFORCE_NOT_NULL(
+        stream_,
+        common::errors::InvalidArgument(
+            "The XPU stream is nullptr. It must not be null."));
+    return stream_;
   }
 
   xpu::Context* GetXContext() const {
@@ -135,11 +140,13 @@ struct XPUContext::Impl {
   void Wait() {
     backends::xpu::XPUDeviceGuard guard(place_.GetDeviceId());
     PD_CHECK(context_ != nullptr, "the xpu context is nullptr.");
-    PADDLE_ENFORCE_XRE_SUCCESS(xpu_wait(context_->xpu_stream));
+    PADDLE_ENFORCE_XRE_SUCCESS(
+        cudaStreamSynchronize(XPU_STREAM_XPU_TO_CUDA(context_->xpu_stream)));
     xpu::Context* ctx_t = GetXdlCtx();
     if (ctx_t) {
       PD_CHECK(ctx_t != nullptr, "the xpu context is nullptr.");
-      PADDLE_ENFORCE_XRE_SUCCESS(xpu_wait(ctx_t->xpu_stream));
+      PADDLE_ENFORCE_XRE_SUCCESS(
+          cudaStreamSynchronize(XPU_STREAM_XPU_TO_CUDA(ctx_t->xpu_stream)));
     }
 
     ClearStashedMemory();
@@ -147,7 +154,7 @@ struct XPUContext::Impl {
 
   class XHPCBufferManager {
    public:
-    void* Alloc(const Place& place, size_t size, XPUStream xpu_stream) {
+    void* Alloc(const Place& place, size_t size, cudaStream_t xpu_stream) {
       VLOG(3) << "Alloc " << size << " bytes from XHPC on stream "
               << xpu_stream;
       phi::Stream stream(reinterpret_cast<StreamId>(xpu_stream));
@@ -190,9 +197,9 @@ struct XPUContext::Impl {
 
     if (std::getenv("XPU_CDNN_CLUSTER_PARALLEL") != nullptr &&
         !is_comm_context) {
-      XPUStream s;
-      xpu_stream_create(&s);
-      context_->set_stream(s);
+      cudaStream_t s;
+      cudaStreamCreate(&s);
+      context_->set_stream(XPU_STREAM_CUDA_TO_XPU(s));
     }
 
     if (std::getenv("XPU_PADDLE_DISABLE_ALLOC_OVERLOAD") == nullptr) {
@@ -201,7 +208,7 @@ struct XPUContext::Impl {
           [&xhpc_buf_mgr = xhpc_buf_mgr_,
            &place = place_,
            s = context_->get_stream()](size_t size) -> void* {
-        return xhpc_buf_mgr.Alloc(place, size, s);
+        return xhpc_buf_mgr.Alloc(place, size, XPU_STREAM_XPU_TO_CUDA(s));
       };
       auto overload_save_fn = [&xhpc_buf_mgr = xhpc_buf_mgr_]() {
         xhpc_buf_mgr.Save();
@@ -230,9 +237,10 @@ struct XPUContext::Impl {
   void SetXContext(xpu::Context* context) {
     if (context_ != nullptr) {
       backends::xpu::XPUDeviceGuard guard(place_.GetDeviceId());
-      PADDLE_ENFORCE_XRE_SUCCESS(xpu_wait(context_->xpu_stream));
+      PADDLE_ENFORCE_XRE_SUCCESS(
+          cudaStreamSynchronize(XPU_STREAM_XPU_TO_CUDA(context_->xpu_stream)));
       if (context_->xpu_stream != nullptr && stream_owned_) {
-        xpu_stream_destroy(context_->xpu_stream);
+        cudaStreamDestroy(XPU_STREAM_XPU_TO_CUDA(context_->xpu_stream));
         stream_owned_ = false;
         context_->xpu_stream = nullptr;
       }
@@ -251,8 +259,11 @@ struct XPUContext::Impl {
       VLOG(3) << "xpu stream is already created for current context";
       return;
     }
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_create(&context_->xpu_stream));
-    stream_owned_ = true;
+    // PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_create(&context_->xpu_stream));
+    // stream_owned_ = true;
+    PADDLE_THROW(common::errors::PermissionDenied(
+        "communication context is not suggested to create xpu stream, please "
+        "use default calculation context"));
   }
 
   void SetXdlCtx() {
@@ -295,6 +306,7 @@ struct XPUContext::Impl {
   backends::xpu::XPUVersion xpu_version_;
   int runtime_version_;
   int driver_version_;
+  XPUCUDAStream* stream_{nullptr};
   xpu::Context* context_{nullptr};
   std::unordered_map<std::string, xpu::Context*> context_map_;
 
@@ -372,9 +384,14 @@ XPUContext::~XPUContext() = default;
 
 const Place& XPUContext::GetPlace() const { return impls_[0]->GetPlace(); }
 
-XPUStream XPUContext::stream(int i) const {
+cudaStream_t XPUContext::stream(int i = 0) const {
   CheckValidStreamId(i);
   return impls_[i]->stream();
+}
+
+XPUCUDAStream* XPUContext::xpu_cuda_stream(int i = 0) const {
+  CheckValidStreamId(i);
+  return impls_[i]->xpu_cuda_stream();
 }
 
 void XPUContext::SetStream(void* stream, int i) {
@@ -447,27 +464,27 @@ void XPUContext::CreateStream(int i) {
   impls_[i]->CreateStream();
 }
 
-void XPUContext::RecordEvent(XPUEvent event, int s) const {
+void XPUContext::RecordEvent(cudaEvent_t event, int s) const {
   CheckValidStreamId(s);
-  int r = xpu_event_record(event, stream(s));
+  int r = cudaEventRecord(event, stream(s));
   PADDLE_ENFORCE_XRE_SUCCESS(r);
 }
 
-void XPUContext::StreamWaitEvent(XPUEvent event, int s) const {
+void XPUContext::StreamWaitEvent(cudaEvent_t event, int s) const {
   CheckValidStreamId(s);
-  int r = xpu_stream_wait_event(stream(s), event);
+  int r = cudaStreamWaitEvent(stream(s), event);
   PADDLE_ENFORCE_XRE_SUCCESS(r);
 }
 
 void XPUContext::StreamWaitStream(int wait_stream, int record_stream) const {
   CheckValidStreamId(wait_stream);
   CheckValidStreamId(record_stream);
-  XPUEvent event;
-  int r = xpu_event_create(&event);
+  cudaEvent_t event;
+  int r = cudaEventCreate(&event);
   PADDLE_ENFORCE_XRE_SUCCESS(r);
   RecordEvent(event, record_stream);
   StreamWaitEvent(event, wait_stream);
-  r = xpu_event_destroy(event);
+  r = cudaEventDestroy(event);
   PADDLE_ENFORCE_XRE_SUCCESS(r);
 
   impls_[record_stream]->ClearStashedMemory();

@@ -274,10 +274,10 @@ void BufferedReader::ReadAsync(size_t i) {
       }
 
       phi::backends::xpu::XPUDeviceGuard guard(place_.device);
-      int r = xpu_event_record(events_[i].get(), compute_stream_);
-      PADDLE_ENFORCE_XDNN_SUCCESS(r, "xpu_event_record");
-      r = xpu_stream_wait_event(stream_.get(), events_[i].get());
-      PADDLE_ENFORCE_XDNN_SUCCESS(r, "xpu_stream_wait_event");
+      PADDLE_ENFORCE_XPU_SUCCESS(
+          cudaEventRecord(events_[i].get(), compute_stream_));
+      PADDLE_ENFORCE_XPU_SUCCESS(
+          cudaStreamWaitEvent(stream_.get(), events_[i].get()));
 
       phi::RecordEvent record_event(
           "BufferedReader:MemoryCopy", phi::TracerEventType::UserDefined, 1);

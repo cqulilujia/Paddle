@@ -60,7 +60,7 @@ void CConcatKernel(const Context& dev_ctx,
   temp_out.Resize(temp_out_dims);
   dev_ctx.Alloc(&temp_out, x->dtype());
 
-  XPUStream stream = nullptr;
+  cudaStream_t stream = nullptr;
   phi::distributed::BKCLCommContext* comm_ctx = nullptr;
   comm_ctx =
       static_cast<phi::distributed::BKCLCommContext*>(dev_ctx.GetCommContext());

@@ -134,8 +134,6 @@ limitations under the License. */
 #include "paddle/phi/core/memory/allocation/xpu_ipc_allocator.h"
 #include "paddle/phi/core/platform/device/xpu/xpu_info.h"
 #include "paddle/phi/core/platform/device/xpu/xpu_op_list.h"
-#include "xpu/runtime.h"
-#include "xpu/runtime_ex.h"
 #endif
 
 #ifdef PADDLE_WITH_CUSTOM_DEVICE
@@ -902,7 +900,7 @@ void BindTensor(pybind11::module &m) {  // NOLINT
              const auto &device_id =
                  paddle::platform::GetXPUCurrentDeviceId();
              auto stream = paddle::platform::get_current_stream(device_id);
-             xpu_wait(stream);
+             cudaStreamSynchronize(stream);
              int type_idx = static_cast<int>(self.type());
              size_t data_size = self.numel() *
                  framework::SizeOfType(

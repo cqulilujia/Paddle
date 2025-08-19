@@ -28,17 +28,17 @@ class BKCLCommContext final : public CommContext {
 
   BKCLContext_t GetBKCLComm();
 
-  XPUStream GetStream();
+  cudaStream_t GetStream();
 
-  XPUEvent GetComputeEvent();
+  cudaEvent_t GetComputeEvent();
 
   void SetComputeEvent(
-      std::shared_ptr<std::remove_pointer<XPUEvent>::type>&& compute_event);
+      std::shared_ptr<std::remove_pointer<cudaEvent_t>::type>&& compute_event);
 
-  XPUEvent GetCommEvent();
+  cudaEvent_t GetCommEvent();
 
   void SetCommEvent(
-      std::shared_ptr<std::remove_pointer<XPUEvent>::type>&& comm_event);
+      std::shared_ptr<std::remove_pointer<cudaEvent_t>::type>&& comm_event);
 
   phi::XPUContext* GetDevContext();
 
@@ -47,35 +47,35 @@ class BKCLCommContext final : public CommContext {
   void Broadcast(phi::DenseTensor* out_tensor,
                  const phi::DenseTensor& in_tensor,
                  int root,
-                 XPUStream stream);
+                 cudaStream_t stream);
 
   void Send(const phi::DenseTensor& in_tensor,
             const int64_t& count,
             const int& peer,
-            XPUStream stream);
+            cudaStream_t stream);
 
   void Recv(phi::DenseTensor* out_tensor,
             const int64_t& count,
             const int& peer,
-            XPUStream stream);
+            cudaStream_t stream);
 
   void ReduceScatter(phi::DenseTensor* out_tensor,
                      const phi::DenseTensor& in_tensor,
                      BKCLOp reduce_type,
-                     XPUStream stream);
+                     cudaStream_t stream);
 
   void AllGather(phi::DenseTensor* out_tensor,
                  const phi::DenseTensor& in_tensor,
-                 XPUStream stream);
+                 cudaStream_t stream);
 
   void AllReduce(phi::DenseTensor* out_tensor,
                  const phi::DenseTensor& in_tensor,
                  BKCLOp reduce_type,
-                 XPUStream stream);
+                 cudaStream_t stream);
 
   void AllToAll(phi::DenseTensor* out_tensor,
                 const phi::DenseTensor& in_tensor,
-                XPUStream stream);
+                cudaStream_t stream);
 
   void AllToAllUnequalSplit(phi::DenseTensor* out_tensor,
                             const phi::DenseTensor& in_tensor,
@@ -83,13 +83,13 @@ class BKCLCommContext final : public CommContext {
                             const phi::DenseTensor& out_offset_tensor,
                             const phi::DenseTensor& in_size_tensor,
                             const phi::DenseTensor& in_offset_tensor,
-                            XPUStream stream);
+                            cudaStream_t stream);
 
   void Reduce(phi::DenseTensor* out_tensor,
               const phi::DenseTensor& in_tensor,
               BKCLOp reduce_type,
               int root,
-              XPUStream stream);
+              cudaStream_t stream);
 
   void GroupStart();
 
@@ -103,10 +103,10 @@ class BKCLCommContext final : public CommContext {
   std::unique_ptr<phi::XPUContext> dev_ctx_;
 
   // used for comm wait compute, compute_stream-->event-->comm_stream
-  std::shared_ptr<std::remove_pointer<XPUEvent>::type> compute_event_;
+  std::shared_ptr<std::remove_pointer<cudaEvent_t>::type> compute_event_;
 
   // used for compute wait comm, comm_stream-->event-->compute_stream
-  std::shared_ptr<std::remove_pointer<XPUEvent>::type> comm_event_;
+  std::shared_ptr<std::remove_pointer<cudaEvent_t>::type> comm_event_;
 };
 
 }  // namespace distributed

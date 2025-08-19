@@ -35,7 +35,7 @@ namespace imperative {
 
 static void AllReduce(const phi::DenseTensor &src,
                       phi::DenseTensor *dst,
-                      const XPUStream stream,
+                      const cudaStream_t stream,
                       const platform::BKCLComm *comm) {
   const auto &place = src.place();
   PADDLE_ENFORCE_EQ(
@@ -159,8 +159,9 @@ void BKCLParallelContext::AllReduceByStream(const framework::Variable &src,
       phi::DeviceContextPool::Instance().Get(place));
   platform::BKCLComm *comm =
       platform::BKCLCommContext::Instance().Get(ring_id, place);
-  XPUStream stream =
-      use_calc_stream ? dev_ctx->x_context()->xpu_stream : comm->stream();
+  cudaStream_t stream =
+      use_calc_stream ? XPU_STREAM_XPU_TO_CUDA(dev_ctx->x_context()->xpu_stream)
+                      : XPU_STREAM_XPU_TO_CUDA(comm->stream());
 
   if (src.IsType<phi::DenseTensor>()) {
     if (!dst->IsType<phi::DenseTensor>()) {
@@ -184,7 +185,7 @@ void BKCLParallelContext::Broadcast(framework::Variable *src, int ring_id) {
   const auto &place = src_tensor->place();
   platform::BKCLComm *comm =
       platform::BKCLCommContext::Instance().Get(ring_id, place);
-  XPUStream stream = comm->stream();
+  cudaStream_t stream = comm->stream();
 
   void *src_ptr = src_tensor->data();
   auto data_type = platform::ToBKCLDataType(
@@ -229,8 +230,8 @@ void BKCLParallelContext::WaitCompute(int ring_id) {
   auto event = compute_events_[ring_id].get();
 
   // compute_stream-->event-->comm_stream
-  PADDLE_ENFORCE_XPU_SUCCESS(xpu_event_record(event, compute_stream));
-  PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_wait_event(comm_stream, event));
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaEventRecord(event, compute_stream));
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamWaitEvent(comm_stream, event));
 }
 
 void BKCLParallelContext::WaitComm(int ring_id) {
@@ -255,8 +256,8 @@ void BKCLParallelContext::WaitComm(int ring_id) {
   auto event = compute_events_[ring_id].get();
 
   // comm_stream-->event-->compute_stream
-  PADDLE_ENFORCE_XPU_SUCCESS(xpu_event_record(event, comm_stream));
-  PADDLE_ENFORCE_XPU_SUCCESS(xpu_stream_wait_event(compute_stream, event));
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaEventRecord(event, comm_stream));
+  PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamWaitEvent(compute_stream, event));
 }
 
 void BKCLParallelContext::SynchronizeCompute() {

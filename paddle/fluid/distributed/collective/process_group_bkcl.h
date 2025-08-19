@@ -175,21 +175,21 @@ class ProcessGroupBKCL : public ProcessGroupWithStream {
   void CreateBKCLEnvCache(const Place& place, const std::string& place_key);
 
   std::shared_ptr<ProcessGroup::Task> Collective(
-      std::function<void(phi::distributed::BKCLCommContext*, XPUStream)> fn,
+      std::function<void(phi::distributed::BKCLCommContext*, cudaStream_t)> fn,
       const std::vector<phi::DenseTensor>& tensors,
       CommType comm_type,
       bool sync_op,
       bool use_calc_stream);
 
   std::shared_ptr<ProcessGroup::Task> Collective(
-      std::function<void(phi::distributed::BKCLCommContext*, XPUStream)> fn,
+      std::function<void(phi::distributed::BKCLCommContext*, cudaStream_t)> fn,
       const phi::DenseTensor& tensor,
       CommType comm_type,
       bool sync_op,
       bool use_calc_stream);
 
   std::shared_ptr<ProcessGroup::Task> Point2Point(
-      std::function<void(phi::distributed::BKCLCommContext*, XPUStream, int)>
+      std::function<void(phi::distributed::BKCLCommContext*, cudaStream_t, int)>
           fn,
       int peer,
       const phi::DenseTensor& tensor,

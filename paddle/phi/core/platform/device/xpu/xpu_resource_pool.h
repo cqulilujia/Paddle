@@ -25,8 +25,8 @@
 namespace paddle {
 namespace platform {
 
-using XpuStreamObject = std::remove_pointer<xpuStream>::type;
-using XpuEventObject = std::remove_pointer<xpuEventHandle>::type;
+using XpuStreamObject = std::remove_pointer<cudaStream_t>::type;
+using XpuEventObject = std::remove_pointer<cudaEvent_t>::type;
 
 class XpuStreamResourcePool {
  public:

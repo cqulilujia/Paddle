@@ -63,9 +63,9 @@ int main() {
   printf("\nCheck %s! \n", pass ? "pass" : "fail");
 
   destroy_context(ctx);
-  errcode = xpu_free(A);
+  errcode = cudaFree(A);
   assert(errcode == 0);
-  errcode = xpu_free(B);
+  errcode = cudaFree(B);
   assert(errcode == 0);
   return 0;
 }

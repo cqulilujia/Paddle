@@ -232,7 +232,8 @@ void AdamDenseParamSparseGradKernel(
     phi::funcs::scatter::MergeAdd<Context, float> merge_func;
     merge_func(dev_ctx, grad, &tmp_grad_merge, true);
 
-    xpu_wait(dev_ctx.x_context()->xpu_stream);
+    cudaStreamSynchronize(
+        XPU_STREAM_XPU_TO_CUDA(dev_ctx.x_context()->xpu_stream));
     grad_merge_ptr = &tmp_grad_merge;
   }
 
@@ -250,7 +251,8 @@ void AdamDenseParamSparseGradKernel(
   for (size_t i = 0; i < grad_merge.rows().size(); ++i) {
     rows[i] = static_cast<int>(merge_rows[i]);
   }
-  xpu_wait(dev_ctx.x_context()->xpu_stream);
+  cudaStreamSynchronize(
+      XPU_STREAM_XPU_TO_CUDA(dev_ctx.x_context()->xpu_stream));
   memory_utils::Copy(dev_ctx.GetPlace(),
                      xpu_rows,
                      CPUPlace(),
@@ -317,7 +319,8 @@ void AdamDenseParamSparseGradKernel(
                        false,
                        beta1_,
                        0.0f);
-        xpu_wait(dev_ctx.x_context()->xpu_stream);
+        cudaStreamSynchronize(
+            XPU_STREAM_XPU_TO_CUDA(dev_ctx.x_context()->xpu_stream));
         PADDLE_ENFORCE_XDNN_SUCCESS(r, "adam");
       }
 
@@ -339,7 +342,8 @@ void AdamDenseParamSparseGradKernel(
                        false,
                        beta2_,
                        0.0f);
-        xpu_wait(dev_ctx.x_context()->xpu_stream);
+        cudaStreamSynchronize(
+            XPU_STREAM_XPU_TO_CUDA(dev_ctx.x_context()->xpu_stream));
         PADDLE_ENFORCE_XDNN_SUCCESS(r, "adam");
       }
     }

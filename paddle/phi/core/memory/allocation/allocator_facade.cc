@@ -190,7 +190,8 @@ class AllocatorFacadePrivate {
 #endif
 #ifdef PADDLE_WITH_XPU
   using XPUAllocatorMap =
-      std::map<phi::XPUPlace, std::map<XPUStream, std::shared_ptr<Allocator>>>;
+      std::map<phi::XPUPlace,
+               std::map<cudaStream_t, std::shared_ptr<Allocator>>>;
 #endif
 #ifdef PADDLE_WITH_CUSTOM_DEVICE
   using CustomDeviceAllocatorMap =
@@ -583,19 +584,19 @@ class AllocatorFacadePrivate {
 #endif
 
 #ifdef PADDLE_WITH_XPU
-  bool HasXPUAllocator(const phi::XPUPlace& place, XPUStream stream) {
+  bool HasXPUAllocator(const phi::XPUPlace& place, cudaStream_t stream) {
     auto it = xpu_allocators_.find(place);
     if (it == xpu_allocators_.end()) {
       return false;
     }
-    const std::map<XPUStream, std::shared_ptr<Allocator>>& allocator_map =
+    const std::map<cudaStream_t, std::shared_ptr<Allocator>>& allocator_map =
         it->second;
     return allocator_map.find(stream) != allocator_map.end();
   }
 
   const std::shared_ptr<Allocator>& GetAllocator(
       const phi::XPUPlace& place,
-      XPUStream stream,
+      cudaStream_t stream,
       bool create_if_not_found = false) {
     if (stream == GetDefaultStream(place)) {
       VLOG(7) << "Get Allocator by passing in a default stream";
@@ -637,13 +638,13 @@ class AllocatorFacadePrivate {
     return iter->second;
   }
 
-  XPUStream GetDefaultStream(const phi::XPUPlace& place) const {
+  cudaStream_t GetDefaultStream(const phi::XPUPlace& place) const {
     const std::shared_ptr<StreamSafeXPUAllocator>& allocator =
         GetDefaultStreamSafeXPUAllocator(place);
     return allocator->GetDefaultStream();
   }
 
-  void SetDefaultStream(const phi::XPUPlace& place, XPUStream stream) {
+  void SetDefaultStream(const phi::XPUPlace& place, cudaStream_t stream) {
     const std::shared_ptr<StreamSafeXPUAllocator>& allocator =
         GetDefaultStreamSafeXPUAllocator(place);
 
@@ -665,7 +666,7 @@ class AllocatorFacadePrivate {
   }
 
   bool RecordStream(std::shared_ptr<phi::Allocation> allocation,
-                    XPUStream stream) {
+                    cudaStream_t stream) {
     std::shared_ptr<StreamSafeXPUAllocation> stream_safe_xpu_allocation =
         std::dynamic_pointer_cast<StreamSafeXPUAllocation>(allocation);
     if (stream_safe_xpu_allocation != nullptr) {
@@ -676,7 +677,7 @@ class AllocatorFacadePrivate {
     }
   }
 
-  XPUStream GetStream(
+  cudaStream_t GetStream(
       const std::shared_ptr<phi::Allocation>& allocation) const {
     const std::shared_ptr<StreamSafeXPUAllocation> stream_safe_xpu_allocation =
         std::dynamic_pointer_cast<StreamSafeXPUAllocation>(allocation);
@@ -1289,7 +1290,7 @@ class AllocatorFacadePrivate {
     return std::make_shared<XPUAllocator>(p);
   }
 
-  void InitStreamSafeXPUAllocator(phi::XPUPlace p, XPUStream stream) {
+  void InitStreamSafeXPUAllocator(phi::XPUPlace p, cudaStream_t stream) {
     PADDLE_ENFORCE_EQ(
         strategy_,
         AllocatorStrategy::kAutoGrowth,
@@ -1309,7 +1310,7 @@ class AllocatorFacadePrivate {
     }
   }
 
-  void InitAutoGrowthXPUAllocator(phi::XPUPlace p, XPUStream stream) {
+  void InitAutoGrowthXPUAllocator(phi::XPUPlace p, cudaStream_t stream) {
     auto chunk_size = FLAGS_auto_growth_chunk_size_in_mb << 6;
     VLOG(4) << "FLAGS_auto_growth_chunk_size_in_mb is "
             << FLAGS_auto_growth_chunk_size_in_mb;
@@ -1341,7 +1342,7 @@ class AllocatorFacadePrivate {
         underlying_allocator, alignment, chunk_size, allow_free_idle_chunk);
   }
 
-  void WrapStreamSafeXPUAllocator(phi::XPUPlace p, XPUStream stream) {
+  void WrapStreamSafeXPUAllocator(phi::XPUPlace p, cudaStream_t stream) {
     std::shared_ptr<Allocator>& allocator = xpu_allocators_[p][stream];
     allocator = std::make_shared<StreamSafeXPUAllocator>(allocator, p, stream);
   }
@@ -1364,7 +1365,7 @@ class AllocatorFacadePrivate {
   }
 
   void WrapXPURetryAllocator(phi::XPUPlace p,
-                             XPUStream stream,
+                             cudaStream_t stream,
                              size_t retry_time) {
     PADDLE_ENFORCE_GT(
         retry_time,
@@ -1375,7 +1376,7 @@ class AllocatorFacadePrivate {
     allocator = std::make_shared<RetryAllocator>(allocator, retry_time);
   }
 
-  void WrapStatAllocator(phi::XPUPlace p, XPUStream stream) {
+  void WrapStatAllocator(phi::XPUPlace p, cudaStream_t stream) {
     std::shared_ptr<Allocator>& allocator = xpu_allocators_[p][stream];
     allocator = std::make_shared<StatAllocator>(allocator);
   }
@@ -1752,7 +1753,7 @@ AllocationPtr AllocatorFacade::Alloc(const phi::Place& place,
     }
     phi::XPUPlace p(place);
     if (LIKELY(size > 0 && FLAGS_use_system_allocator == false)) {
-      XPUStream s = reinterpret_cast<XPUStream>(stream.id());
+      cudaStream_t s = reinterpret_cast<cudaStream_t>(stream.id());
       return GetPrivate()
           ->GetAllocator(p, s, /* create_if_not_found = */ true)
           ->Allocate(size);
@@ -1903,7 +1904,7 @@ void AllocatorFacade::RemoveMemoryPoolOfCUDAGraph(int64_t id) {
 #endif
 #elif defined(PADDLE_WITH_XPU)
 const std::shared_ptr<Allocator>& AllocatorFacade::GetAllocator(
-    const phi::Place& place, XPUStream stream) {
+    const phi::Place& place, cudaStream_t stream) {
   AllocatorFacadePrivate* m = GetPrivate();
 
   // The XPU currently does not have the concept of MallocAsyncAllocatorUsed
@@ -1922,7 +1923,7 @@ const std::shared_ptr<Allocator>& AllocatorFacade::GetAllocator(
   return m->GetAllocator(place, /* A non-zero num to choose allocator_ */ 1);
 }
 void AllocatorFacade::SetDefaultStream(const phi::XPUPlace& place,
-                                       XPUStream stream) {
+                                       cudaStream_t stream) {
   if (m_->IsStreamSafeCUDAAllocatorUsed()) {
     m_->SetDefaultStream(place, stream);
   }

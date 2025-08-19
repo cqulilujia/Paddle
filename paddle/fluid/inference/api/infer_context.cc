@@ -13,12 +13,9 @@
 // limitations under the License.
 
 #include "paddle/fluid/inference/api/infer_context.h"
+#include "glog/logging.h"
 #include "paddle/fluid/platform/enforce.h"
 #include "paddle/phi/core/dense_tensor.h"
-#ifdef PADDLE_WITH_XPU
-#include "xpu/runtime.h"
-#endif
-#include "glog/logging.h"
 
 namespace paddle {
 
@@ -89,7 +86,7 @@ void InferXPUContext::SetXContext(xpu::Context* x_context) {
     if (l3_owned_ && l3_size_ > 0 &&
         (x_context->_l3_mgr.get_size() != l3_size_ ||
          x_context->_l3_mgr.get_ptr() != l3_ptr_)) {
-      xpu_free(l3_ptr_);
+      cudaFree(l3_ptr_);
     }
     old_x_context->_l3_mgr.set(nullptr, 0);
     l3_size_ = x_context->_l3_mgr.get_size();
@@ -107,7 +104,7 @@ void InferXPUContext::SetL3Info(size_t l3_size,
   if (l3_ptr == nullptr) {
     if (l3_size_ != l3_size) {
       if (l3_owned_) {
-        xpu_free(l3_ptr_);
+        cudaFree(l3_ptr_);
       }
       if (l3_size > 0) {
         xpu_malloc(&l3_ptr_, l3_size, XPU_MEM_L3);
@@ -126,7 +123,7 @@ void InferXPUContext::SetL3Info(size_t l3_size,
     }
   } else {
     if (l3_owned_) {
-      xpu_free(l3_ptr_);
+      cudaFree(l3_ptr_);
     }
     l3_ptr_ = l3_ptr;
     l3_size_ = l3_size;

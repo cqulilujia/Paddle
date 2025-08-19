@@ -40,7 +40,7 @@ class XPUEventManager {
   ~XPUEventManager() {
     if (is_created_) {
       phi::backends::xpu::XPUDeviceGuard guard(device_index_);
-      xpu_event_destroy(event_);
+      cudaEventDestroy(event_);
     }
   }
 
@@ -62,7 +62,7 @@ class XPUEventManager {
 
   bool IsCreated() const { return is_created_; }
   bool DeviceId() const { return device_index_; }
-  xpuEventHandle GetRawXpuEvent() const { return event_; }
+  cudaEvent_t GetRawXpuEvent() const { return event_; }
 
   void Record(const XPUContext& ctx) {
     auto device_index = ctx.GetPlace().device;
@@ -79,14 +79,14 @@ class XPUEventManager {
 
     phi::backends::xpu::XPUDeviceGuard guard(device_index_);
     // TODO(zhangxiaoci) temporary solution: xpu::event seems buggy
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_wait(ctx.stream()));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaStreamSynchronize(ctx.stream()));
   }
 
   void Block(const XPUContext& ctx) const {}
 
  private:
   bool is_created_{false};
-  xpuEventHandle event_{};
+  cudaEvent_t event_{};
   int8_t device_index_{0};
 
  private:
@@ -94,7 +94,7 @@ class XPUEventManager {
     device_index_ = device_index;
     phi::backends::xpu::XPUDeviceGuard guard(device_index);
 
-    PADDLE_ENFORCE_XPU_SUCCESS(xpu_event_create(&event_));
+    PADDLE_ENFORCE_XPU_SUCCESS(cudaEventCreate(&event_));
 
     is_created_ = true;
   }
