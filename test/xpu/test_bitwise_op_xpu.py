@@ -48,6 +48,10 @@ class XPUTestBitwiseAnd(XPUOpTestWrapper):
             if self.dtype == np.bool_:
                 self.low = 0
                 self.high = 2
+            # unsigned 类型特殊处理
+            if np.issubdtype(self.dtype, np.unsignedinteger):
+                self.low = 0
+                self.high = np.iinfo(self.dtype).max + 1
 
             x = np.random.randint(
                 self.low, self.high, self.x_shape, dtype=self.dtype

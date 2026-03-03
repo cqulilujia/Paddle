@@ -152,5 +152,6 @@ PD_REGISTER_KERNEL(gather_nd,
                    float,
                    int64_t,
                    int,
+                   uint8_t,
                    phi::float16,
                    phi::bfloat16) {}

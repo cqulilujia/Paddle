@@ -206,5 +206,6 @@ PD_REGISTER_KERNEL(elementwise_pow,
                    ALL_LAYOUT,
                    phi::ElementwisePowKernel,
                    float,
+                   int64_t,
                    phi::float16,
                    phi::bfloat16) {}

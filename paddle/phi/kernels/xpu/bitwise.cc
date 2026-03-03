@@ -38,11 +38,25 @@ void BitwiseAndKernel(const Context& dev_ctx,
                       const DenseTensor& x,
                       const DenseTensor& y,
                       DenseTensor* out) {
-  // XPU api do not support bitwise operation now.
-  // However, because bitwise and logical operation is identical for bool type,
-  // we can implement bitwise_and_bool kernel by calling their logical
-  // counterpart. Need to be changed when adding support to other types.
-  LogicalAndKernel<T, Context>(dev_ctx, x, y, out);
+  using XPUDataType = typename XPUTypeTrait<T>::Type;
+  dev_ctx.template Alloc<T>(out);
+  std::vector<std::int64_t> xshape(x.dims().size());
+  for (int i = 0; i < x.dims().size(); ++i) {
+    xshape[i] = static_cast<std::int64_t>(x.dims()[i]);
+  }
+
+  std::vector<std::int64_t> yshape(y.dims().size());
+  for (int i = 0; i < y.dims().size(); ++i) {
+    yshape[i] = static_cast<std::int64_t>(y.dims()[i]);
+  }
+  int r =
+      xpu::bitwise_and_tensor(dev_ctx.x_context(),
+                              reinterpret_cast<const XPUDataType*>(x.data<T>()),
+                              reinterpret_cast<const XPUDataType*>(y.data<T>()),
+                              reinterpret_cast<XPUDataType*>(out->data<T>()),
+                              xshape,
+                              yshape);
+  PADDLE_ENFORCE_XDNN_SUCCESS(r, "bitwise_and_tensor");
 }
 
 template <typename T, typename Context>
@@ -56,5 +70,14 @@ void BitwiseOrKernel(const Context& dev_ctx,
 }  // namespace phi
 
 PD_REGISTER_KERNEL(bitwise_not, XPU, ALL_LAYOUT, phi::BitwiseNotKernel, bool) {}
-PD_REGISTER_KERNEL(bitwise_and, XPU, ALL_LAYOUT, phi::BitwiseAndKernel, bool) {}
+PD_REGISTER_KERNEL(bitwise_and,
+                   XPU,
+                   ALL_LAYOUT,
+                   phi::BitwiseAndKernel,
+                   bool,
+                   int64_t,
+                   int,
+                   int16_t,
+                   int8_t,
+                   uint8_t) {}
 PD_REGISTER_KERNEL(bitwise_or, XPU, ALL_LAYOUT, phi::BitwiseOrKernel, bool) {}
